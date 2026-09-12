@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { NEWS_CATEGORIES } from '@/lib/constants';
 import { NewsArticleWithRelations, NewsCategory } from '@/types';
 import NewsCard from './NewsCard';
@@ -21,6 +21,14 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const pillsRef = useRef<HTMLDivElement>(null);
+
+  const handleWheelScroll = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    if (pillsRef.current) {
+      e.preventDefault();
+      pillsRef.current.scrollLeft += e.deltaY;
+    }
+  }, []);
 
   const fetchNews = async (resetPage = false) => {
     setLoading(true);
@@ -138,6 +146,8 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
 
       {/* Category Pills Bar */}
       <div
+        ref={pillsRef}
+        onWheel={handleWheelScroll}
         style={{
           display: 'flex',
           alignItems: 'center',
