@@ -143,8 +143,10 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
           alignItems: 'center',
           gap: '0.4rem',
           overflowX: 'auto',
-          paddingBottom: '0.25rem',
-          scrollbarWidth: 'none',
+          paddingBottom: '0.5rem',
+          scrollbarWidth: 'thin',
+          flexWrap: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {NEWS_CATEGORIES.map((cat) => {
@@ -164,6 +166,7 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
                 border: `1px solid ${isActive ? 'transparent' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                flexShrink: 0,
               }}
             >
               {cat.label}
