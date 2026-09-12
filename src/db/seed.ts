@@ -341,16 +341,8 @@ const dbData: DbSchema = {
   newsArticles: newsArticlesArr,
   articleCompanies: articleCompaniesArr,
   articleSectors: articleSectorsArr,
-  watchlists: [
-    { id: 1, name: 'My Favourites', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  ],
-  watchlistCompanies: [
-    { id: 1, watchlistId: 1, companyId: 1, position: 0 },  // Reliance
-    { id: 2, watchlistId: 1, companyId: 3, position: 1 },  // HDFC Bank
-    { id: 3, watchlistId: 1, companyId: 2, position: 2 },  // TCS
-    { id: 4, watchlistId: 1, companyId: 4, position: 3 },  // Infosys
-    { id: 5, watchlistId: 1, companyId: 17, position: 4 }, // Titan
-  ],
+  watchlists: [],
+  watchlistCompanies: [],
 };
 
 db.writeAll(dbData);
