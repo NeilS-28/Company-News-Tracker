@@ -147,20 +147,6 @@ export default function MarketOverview() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '1px 6px',
-                        borderRadius: '3px',
-                        background: rankStyle.bg,
-                        border: `1px solid ${rankStyle.border}`,
-                        color: rankStyle.text,
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      TOP STORY #{index + 1}
-                    </span>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                       {article.source}
                     </span>
