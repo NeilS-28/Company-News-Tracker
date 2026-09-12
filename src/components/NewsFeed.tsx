@@ -29,7 +29,7 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
     const handler = (e: WheelEvent) => {
       if (e.deltaY !== 0) {
         e.preventDefault();
-        el.scrollLeft += e.deltaY;
+        el.scrollBy({ left: e.deltaY, behavior: 'smooth' });
       }
     };
     el.addEventListener('wheel', handler, { passive: false });
