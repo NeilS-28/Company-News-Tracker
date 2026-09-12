@@ -129,7 +129,13 @@ class JsonDatabase {
   }
 
   getCompanyBySlug(slug: string): CompanyRow | undefined {
-    return this.load().companies.find(c => c.slug === slug);
+    const s = slug.toLowerCase();
+    return this.load().companies.find(c => c.slug.toLowerCase() === s || c.ticker.toLowerCase() === s);
+  }
+
+  getCompanyByTicker(ticker: string): CompanyRow | undefined {
+    const t = ticker.toUpperCase().replace('.NS', '').replace('.BO', '');
+    return this.load().companies.find(c => c.ticker.toUpperCase() === t);
   }
 
   getCompanyById(id: number): CompanyRow | undefined {

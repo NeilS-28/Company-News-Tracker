@@ -2,6 +2,7 @@
 // Run with: npm run db:seed
 
 import { db, type DbSchema } from './index';
+import equitiesMaster from './equities_master.json';
 
 function slugify(name: string): string {
   return name
@@ -31,6 +32,11 @@ const sectorData = [
   { name: 'Diversified', description: 'Conglomerates with interests across multiple sectors' },
   { name: 'Services', description: 'Ports, logistics, infrastructure services, and diversified services' },
   { name: 'Consumer Services', description: 'Tourism, hotels, food services, and consumer-facing services' },
+  { name: 'Chemicals', description: 'Specialty chemicals, agrochemicals, petrochemicals, and basic industrial chemicals' },
+  { name: 'Realty & Real Estate', description: 'Residential and commercial real estate developers, REITs, and construction materials' },
+  { name: 'Textiles & Apparel', description: 'Yarn, cotton, spinning, fabrics, apparel, and fashion garment manufacturers' },
+  { name: 'Media & Entertainment', description: 'Television broadcasting, digital streaming, film entertainment, and publication' },
+  { name: 'Forest Materials & Paper', description: 'Paper manufacturing, packaging solutions, plywood, and forest products' },
 ];
 
 const sectors = sectorData.map((s, i) => ({
@@ -115,20 +121,50 @@ const companyData: Array<{
   { name: 'Bharat Electronics Ltd', shortName: 'BEL', ticker: 'BEL', sector: 'Capital Goods', industry: 'Defence Electronics', description: 'India\'s premier defence electronics company, a Navratna PSU under the Ministry of Defence.' },
 ];
 
-const companiesArr = companyData.map((c, i) => ({
-  id: i + 1,
-  name: c.name,
-  shortName: c.shortName,
-  ticker: c.ticker,
-  sector: c.sector,
-  sectorSlug: getSectorSlug(c.sector),
-  industry: c.industry,
-  description: c.description,
-  logoUrl: null,
-  isNifty50: true,
-  isActive: true,
-  slug: slugify(c.shortName),
-}));
+const nifty50Tickers = new Set(companyData.map(c => c.ticker));
+
+const additionalCompanies = (equitiesMaster as Array<{
+  name: string;
+  shortName: string;
+  ticker: string;
+  sector: string;
+  industry: string;
+  description: string;
+  isin: string;
+}>)
+  .filter(e => !nifty50Tickers.has(e.ticker))
+  .map((e, idx) => ({
+    id: companyData.length + idx + 1,
+    name: e.name,
+    shortName: e.shortName,
+    ticker: e.ticker,
+    sector: e.sector,
+    sectorSlug: getSectorSlug(e.sector),
+    industry: e.industry,
+    description: e.description,
+    logoUrl: null,
+    isNifty50: false,
+    isActive: true,
+    slug: slugify(e.ticker),
+  }));
+
+const companiesArr = [
+  ...companyData.map((c, i) => ({
+    id: i + 1,
+    name: c.name,
+    shortName: c.shortName,
+    ticker: c.ticker,
+    sector: c.sector,
+    sectorSlug: getSectorSlug(c.sector),
+    industry: c.industry,
+    description: c.description,
+    logoUrl: null,
+    isNifty50: true,
+    isActive: true,
+    slug: slugify(c.shortName),
+  })),
+  ...additionalCompanies,
+];
 
 // ============================================================
 // SAMPLE NEWS ARTICLES

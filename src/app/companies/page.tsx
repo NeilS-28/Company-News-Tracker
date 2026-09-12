@@ -3,8 +3,8 @@ import { Building2 } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'NIFTY 50 Companies Directory — MarketPulse',
-  description: 'Track all 50 constituent companies of the NIFTY 50 index with real-time quotes, sector categorization, and latest news.',
+  title: 'Indian Listed Companies Directory — MarketPulse',
+  description: 'Explore 2,500+ listed equities across the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE) with real-time quotes, sector categorization, and latest news.',
 };
 
 export default function CompaniesPage() {
@@ -28,10 +28,10 @@ export default function CompaniesPage() {
         </div>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            NIFTY 50 Companies
+            Indian Listed Companies
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            All 50 benchmark constituents of the National Stock Exchange (NSE)
+            2,500+ equities listed on the National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE)
           </p>
         </div>
       </div>

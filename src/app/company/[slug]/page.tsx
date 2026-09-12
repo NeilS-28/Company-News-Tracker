@@ -109,7 +109,7 @@ export default function CompanyPage({
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
         >
           <ArrowLeft size={16} />
-          <span>Back to NIFTY 50 Directory</span>
+          <span>Back to Companies Directory</span>
         </Link>
       </div>
 
@@ -341,7 +341,7 @@ export default function CompanyPage({
 
             {peers.length === 0 ? (
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                No other NIFTY 50 peers in this sector.
+                No other listed peers in this sector.
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>

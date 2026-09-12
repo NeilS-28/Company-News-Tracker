@@ -7,9 +7,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sectorSlug = searchParams.get('sector');
     const search = searchParams.get('search');
-    const sortBy = searchParams.get('sort') || 'name'; // 'name' | 'change' | 'news'
+    const filter = searchParams.get('filter'); // 'all' | 'nifty50'
+    const sortBy = searchParams.get('sort') || 'name'; // 'name' | 'ticker' | 'news'
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '24', 10)));
 
     let companies = db.getCompanies();
+
+    if (filter === 'nifty50') {
+      companies = companies.filter(c => c.isNifty50);
+    }
 
     if (sectorSlug && sectorSlug !== 'all') {
       companies = companies.filter(c => c.sectorSlug === sectorSlug);
@@ -19,16 +26,41 @@ export async function GET(request: NextRequest) {
       const q = search.toLowerCase();
       companies = companies.filter(
         c =>
+          c.ticker.toLowerCase().includes(q) ||
           c.name.toLowerCase().includes(q) ||
           c.shortName.toLowerCase().includes(q) ||
-          c.ticker.toLowerCase().includes(q) ||
-          c.sector.toLowerCase().includes(q)
+          c.sector.toLowerCase().includes(q) ||
+          c.industry.toLowerCase().includes(q)
       );
     }
 
-    // Attach quote and news stats
+    const total = companies.length;
+
+    // Sorting
+    if (sortBy === 'ticker') {
+      companies.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    } else if (sortBy === 'news') {
+      companies.sort((a, b) => {
+        const countA = db.getRecentNewsCountForCompany(a.id);
+        const countB = db.getRecentNewsCountForCompany(b.id);
+        return countB - countA;
+      });
+    } else {
+      // Default: prioritize Nifty 50 constituents first, then alphabetical by name
+      companies.sort((a, b) => {
+        if (a.isNifty50 && !b.isNifty50) return -1;
+        if (!a.isNifty50 && b.isNifty50) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    // Paginate slice
+    const startIndex = (page - 1) * limit;
+    const paginatedCompanies = companies.slice(startIndex, startIndex + limit);
+
+    // Attach quote and news stats for the current page only
     const enrichedCompanies = await Promise.all(
-      companies.map(async (company) => {
+      paginatedCompanies.map(async (company) => {
         let quote = null;
         try {
           quote = await getMarketQuote(company.ticker);
@@ -48,18 +80,14 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    if (sortBy === 'change') {
-      enrichedCompanies.sort((a, b) => (b.quote?.changePercent ?? 0) - (a.quote?.changePercent ?? 0));
-    } else if (sortBy === 'news') {
-      enrichedCompanies.sort((a, b) => (b.recentNewsCount ?? 0) - (a.recentNewsCount ?? 0));
-    } else {
-      enrichedCompanies.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
     return NextResponse.json({
       success: true,
       data: enrichedCompanies,
-      total: enrichedCompanies.length,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';

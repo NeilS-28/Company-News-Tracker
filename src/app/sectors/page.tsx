@@ -42,7 +42,7 @@ export default function SectorsPage() {
             Indian Market Sectors
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            16 key sectors covering NIFTY 50 industries and macroeconomic trends
+            21 key sectors covering Indian exchange equities and macroeconomic trends
           </p>
         </div>
       </div>

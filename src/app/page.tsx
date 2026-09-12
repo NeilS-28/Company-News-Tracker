@@ -14,7 +14,7 @@ export default function HomePage() {
   const tabs = [
     { id: 'news', label: 'News Feed', icon: Newspaper },
     { id: 'deals', label: 'Deal Radar & Rumours', icon: Radar },
-    { id: 'companies', label: 'NIFTY 50 Companies', icon: Building2 },
+    { id: 'companies', label: 'Companies Directory', icon: Building2 },
     { id: 'sectors', label: 'Sectors & Heatmap', icon: Layers },
   ] as const;
 
@@ -118,17 +118,17 @@ export default function HomePage() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  NIFTY 50 Constituents
+                  Companies Directory
                 </h3>
                 <Link
                   href="/companies"
                   style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600 }}
                 >
-                  View all 50 &rarr;
+                  View all 2,500+ &rarr;
                 </Link>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Track real-time valuations, recent headlines, and corporate actions of India&apos;s leading bluechip enterprises.
+                Track real-time valuations, recent headlines, and corporate actions across Indian listed equities.
               </p>
               <CompanyGrid />
             </div>
@@ -146,10 +146,10 @@ export default function HomePage() {
         <div>
           <div style={{ marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              All 50 NIFTY 50 Companies
+              Indian Listed Equities Directory
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Explore official constituents of the National Stock Exchange benchmark index.
+              Browse and search 2,500+ companies listed on the National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE).
             </p>
           </div>
           <CompanyGrid />

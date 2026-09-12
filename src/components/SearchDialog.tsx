@@ -118,7 +118,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search companies (e.g. Reliance, TCS, INFY) or sectors..."
+            placeholder="Search 2,500+ NSE & BSE companies, tickers (e.g. RELIANCE, ZOMATO, TRENT), sectors..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{
@@ -154,7 +154,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
         <div style={{ maxHeight: 380, overflowY: 'auto', padding: '0.5rem' }}>
           {loading && (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-              Searching NSE companies & sectors...
+              Searching Indian equities & sectors...
             </div>
           )}
 
@@ -166,7 +166,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
           {!loading && !query && (
             <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Type to search any of the 50 NIFTY 50 constituents, industry sectors, or tickers.
+              Type to search 2,500+ NSE & BSE listed equities, industry sectors, or tickers.
             </div>
           )}
 

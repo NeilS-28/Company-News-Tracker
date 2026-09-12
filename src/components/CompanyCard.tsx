@@ -51,7 +51,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
             >
               {company.ticker}
             </Link>
-            {company.isNifty50 && (
+            {company.isNifty50 ? (
               <span
                 style={{
                   fontSize: '0.65rem',
@@ -64,6 +64,21 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                 }}
               >
                 NIFTY 50
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  background: 'var(--bg-glass)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                NSE / BSE
               </span>
             )}
           </div>

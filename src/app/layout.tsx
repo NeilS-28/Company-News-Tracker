@@ -4,9 +4,9 @@ import Header from '@/components/Header';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — Indian Stock Market News & NIFTY 50 Research`,
+  title: `${APP_NAME} — Indian Stock Market News & NSE / BSE Equities Research`,
   description: APP_DESCRIPTION,
-  keywords: ['NIFTY 50', 'Indian Stock Market', 'NSE News', 'Sensex', 'Stock Tracker', 'Company News India'],
+  keywords: ['Indian Stock Market', 'NSE News', 'BSE News', 'NIFTY 50', 'Sensex', 'Stock Tracker', 'Company News India'],
 };
 
 export const viewport: Viewport = {
@@ -43,7 +43,7 @@ export default function RootLayout({
               <span>Indian Stock Market News & Research</span>
             </div>
             <p style={{ maxWidth: 600 }}>
-              Market data & news aggregated for research and educational purposes only. Not financial advice. NIFTY 50 constituents data current.
+              Market data & news aggregated for research and educational purposes only. Not financial advice. NSE & BSE listed equities data current.
             </p>
           </div>
         </footer>

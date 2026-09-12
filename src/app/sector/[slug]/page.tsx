@@ -113,7 +113,7 @@ export default function SectorDetailPage({
             Sector Intelligence
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {companies.length} NIFTY 50 constituents
+            {companies.length} listed equities
           </span>
         </div>
 

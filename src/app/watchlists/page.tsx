@@ -231,7 +231,7 @@ export default function WatchlistsPage() {
               No companies in &quot;{data?.watchlist?.name || 'Watchlist'}&quot; yet
             </h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: 460 }}>
-              Browse NIFTY 50 companies and click the Star icon on any card to add them to your personalized news stream.
+              Browse Indian listed companies and click the Star icon on any card to add them to your personalized news stream.
             </p>
           </div>
           <Link
