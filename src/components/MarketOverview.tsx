@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Activity, Building2, Flame } from 'lucide-react';
+import { ExternalLink, Activity, Building2 } from 'lucide-react';
 import { formatPercent, formatDate, getSentimentBadge } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
@@ -88,38 +88,8 @@ export default function MarketOverview() {
 
   return (
     <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Header bar for Today's Top 3 Headlines */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: '#f59e0b',
-              boxShadow: '0 0 10px #f59e0b',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            <Flame size={14} color="#f59e0b" />
-            Today&apos;s 3 Main Headlines
-          </span>
-        </div>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          Real-time curated
-        </span>
-      </div>
+
+
 
       {/* Top 3 Headlines Grid */}
       <div
