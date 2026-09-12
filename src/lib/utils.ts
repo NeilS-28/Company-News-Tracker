@@ -35,8 +35,12 @@ export function formatRelativeTime(dateString: string): string {
 
 export function formatDate(dateString: string, formatPattern = 'dd MMM yyyy, hh:mm a'): string {
   try {
-    const date = parseISO(dateString);
-    return format(date, formatPattern);
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return format(date, formatPattern);
+    }
+    const parsed = parseISO(dateString);
+    return format(parsed, formatPattern);
   } catch {
     return dateString;
   }

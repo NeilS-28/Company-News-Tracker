@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Radar, ExternalLink, ShieldAlert, CheckCircle2, XCircle, AlertCircle, HelpCircle, FileText, Globe } from 'lucide-react';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { DealRadarItem, DealStatus } from '@/types';
 
 interface DealRadarProps {
@@ -258,7 +258,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
                     </span>
 
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {item.source} • {formatRelativeTime(item.publishedAt)}
+                      {item.source} • <span style={{ fontFamily: 'var(--font-mono)' }}>{formatDate(item.publishedAt)}</span>
                     </span>
                   </div>
 

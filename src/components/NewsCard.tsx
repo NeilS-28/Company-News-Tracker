@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Bookmark, Check, Building2, Layers } from 'lucide-react';
-import { formatRelativeTime, getSentimentBadge } from '@/lib/utils';
+import { formatDate, getSentimentBadge } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
 interface NewsCardProps {
@@ -81,7 +81,9 @@ export default function NewsCard({ article }: NewsCardProps) {
             {article.source}
           </span>
           <span>•</span>
-          <span>{formatRelativeTime(article.publishedAt)}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+            {formatDate(article.publishedAt)}
+          </span>
 
           {article.category && (
             <>

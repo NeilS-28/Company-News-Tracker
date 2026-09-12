@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react';
-import { formatPoints, formatPercent, formatRelativeTime } from '@/lib/utils';
-import { MarketQuote } from '@/types';
+import { ExternalLink, Activity, Building2, Flame } from 'lucide-react';
+import { formatPercent, formatDate, getSentimentBadge } from '@/lib/utils';
+import { NewsArticleWithRelations } from '@/types';
 
-interface MarketData {
-  indices: MarketQuote[];
-  marketBreadth: {
-    advances: number;
-    declines: number;
-    unchanged: number;
-    advanceDeclineRatio: number;
-  };
+interface MarketMoversData {
   gainers: Array<{
     symbol: string;
     name: string;
@@ -30,73 +23,137 @@ interface MarketData {
     change: number;
     changePercent: number;
   }>;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export default function MarketOverview() {
-  const [data, setData] = useState<MarketData | null>(null);
+  const [headlines, setHeadlines] = useState<NewsArticleWithRelations[]>([]);
+  const [movers, setMovers] = useState<MarketMoversData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadMarket() {
+    async function loadData() {
       try {
-        const res = await fetch('/api/market');
-        const json = await res.json();
-        if (json.success) {
-          setData(json.data);
+        const [newsRes, marketRes] = await Promise.allSettled([
+          fetch('/api/news?limit=3'),
+          fetch('/api/market'),
+        ]);
+
+        if (newsRes.status === 'fulfilled') {
+          const newsJson = await newsRes.value.json();
+          if (newsJson.success && Array.isArray(newsJson.data)) {
+            setHeadlines(newsJson.data.slice(0, 3));
+          }
         }
-      } catch {
-        // Fallback
+
+        if (marketRes.status === 'fulfilled') {
+          const marketJson = await marketRes.value.json();
+          if (marketJson.success && marketJson.data) {
+            setMovers({
+              gainers: marketJson.data.gainers || [],
+              losers: marketJson.data.losers || [],
+              updatedAt: marketJson.data.updatedAt,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load top headlines or movers', err);
       } finally {
         setLoading(false);
       }
     }
 
-    loadMarket();
-    const interval = setInterval(loadMarket, 45000); // Poll every 45s
+    loadData();
+    const interval = setInterval(loadData, 60000); // 1 min poll
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="glass-panel skeleton" style={{ height: 100 }} />
-        ))}
+      <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1rem',
+          }}
+        >
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-panel skeleton" style={{ height: 160 }} />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (!data) return null;
-
-  const totalBreadth = (data.marketBreadth.advances + data.marketBreadth.declines + data.marketBreadth.unchanged) || 50;
-  const advancesPct = Math.round((data.marketBreadth.advances / totalBreadth) * 100);
-
   return (
     <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Top indices cards */}
+      {/* Header bar for Today's Top 3 Headlines */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: '#f59e0b',
+              boxShadow: '0 0 10px #f59e0b',
+            }}
+          />
+          <span
+            style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <Flame size={14} color="#f59e0b" />
+            Today&apos;s 3 Main Headlines
+          </span>
+        </div>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          Real-time curated
+        </span>
+      </div>
+
+      {/* Top 3 Headlines Grid */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '1rem',
         }}
       >
-        {data.indices.map((idx) => {
-          const isPos = idx.change >= 0;
+        {headlines.map((article, index) => {
+          const sentiment = getSentimentBadge(article.sentiment);
+          const rankColors = [
+            { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', text: '#f59e0b' },
+            { bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)', text: '#38bdf8' },
+            { bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.3)', text: '#c084fc' },
+          ];
+          const rankStyle = rankColors[index] || rankColors[0];
+
           return (
             <div
-              key={idx.symbol}
+              key={article.id}
               className="glass-panel"
               style={{
                 padding: '1.15rem 1.25rem',
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'space-between',
-                alignItems: 'flex-start',
+                gap: '0.75rem',
                 position: 'relative',
                 overflow: 'hidden',
+                transition: 'transform 0.15s ease, border-color 0.15s ease',
               }}
             >
+              {/* Top Accent Line */}
               <div
                 style={{
                   position: 'absolute',
@@ -104,203 +161,209 @@ export default function MarketOverview() {
                   left: 0,
                   right: 0,
                   height: 2,
-                  background: isPos
-                    ? 'linear-gradient(90deg, #10b981 0%, transparent 100%)'
-                    : 'linear-gradient(90deg, #f43f5e 0%, transparent 100%)',
+                  background: `linear-gradient(90deg, ${rankStyle.text} 0%, transparent 100%)`,
                 }}
               />
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {idx.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.65rem',
-                      padding: '1px 5px',
-                      borderRadius: '3px',
-                      background: 'var(--border-subtle)',
-                      color: 'var(--text-muted)',
-                      fontFamily: 'var(--font-mono)',
-                    }}
-                  >
-                    NSE
-                  </span>
-                </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-                  {formatPoints(idx.price)}
-                </div>
-              </div>
 
-              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              {/* Meta Header */}
+              <div>
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: isPos ? 'var(--bullish-bg)' : 'var(--bearish-bg)',
-                    border: `1px solid ${isPos ? 'var(--bullish-border)' : 'var(--bearish-border)'}`,
-                    color: isPos ? 'var(--bullish)' : 'var(--bearish)',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    fontFamily: 'var(--font-mono)',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
                   }}
                 >
-                  {isPos ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  <span>{formatPercent(idx.changePercent)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                        background: rankStyle.bg,
+                        border: `1px solid ${rankStyle.border}`,
+                        color: rankStyle.text,
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      TOP STORY #{index + 1}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      {article.source}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '1px 6px',
+                      borderRadius: 'var(--radius-full)',
+                      background: sentiment.bg,
+                      color: sentiment.text,
+                      border: `1px solid ${sentiment.border}`,
+                    }}
+                  >
+                    {sentiment.label}
+                  </span>
                 </div>
-                <span
+
+                {/* Headline Link */}
+                <a
+                  href={article.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                    fontFamily: 'var(--font-mono)',
-                    marginTop: '0.25rem',
+                    color: 'var(--text-primary)',
+                    textDecoration: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    marginBottom: '0.4rem',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                 >
-                  {isPos ? '+' : ''}{idx.change.toFixed(2)} pts
-                </span>
+                  <span>{article.title}</span>
+                </a>
+
+                {/* Summary snippet */}
+                {article.summary && (
+                  <p
+                    style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.4,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {article.summary}
+                  </p>
+                )}
+              </div>
+
+              {/* Bottom Meta & Companies */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: '0.5rem',
+                  borderTop: '1px solid var(--border-subtle)',
+                  fontSize: '0.72rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  {article.companies && article.companies.length > 0 ? (
+                    article.companies.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/company/${c.slug}`}
+                        style={{
+                          fontSize: '0.7rem',
+                          fontFamily: 'var(--font-mono)',
+                          padding: '1px 5px',
+                          borderRadius: '3px',
+                          background: 'rgba(56, 189, 248, 0.08)',
+                          color: 'var(--accent-primary)',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.2rem',
+                        }}
+                      >
+                        <Building2 size={10} />
+                        <span>{c.ticker || c.name}</span>
+                      </Link>
+                    ))
+                  ) : (
+                    <span style={{ color: 'var(--text-muted)' }}>Market Wide</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                    {formatDate(article.publishedAt)}
+                  </span>
+                  <ExternalLink size={11} style={{ opacity: 0.7 }} />
+                </div>
               </div>
             </div>
           );
         })}
-
-        {/* Market Breadth Card */}
-        <div
-          className="glass-panel"
-          style={{
-            padding: '1.15rem 1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Market Sentiment & Breadth
-            </span>
-            <span
-              style={{
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                color: advancesPct > 50 ? 'var(--bullish)' : 'var(--bearish)',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: advancesPct > 50 ? 'var(--bullish-bg)' : 'var(--bearish-bg)',
-              }}
-            >
-              {advancesPct > 50 ? 'Bullish' : 'Bearish'} ({advancesPct}%)
-            </span>
-          </div>
-
-          <div style={{ margin: '0.6rem 0' }}>
-            {/* Visual ratio bar */}
-            <div
-              style={{
-                width: '100%',
-                height: 8,
-                borderRadius: 4,
-                overflow: 'hidden',
-                display: 'flex',
-                backgroundColor: 'var(--border-subtle)',
-              }}
-            >
-              <div
-                style={{
-                  width: `${advancesPct}%`,
-                  backgroundColor: 'var(--bullish)',
-                  transition: 'width 0.5s ease',
-                }}
-              />
-              <div
-                style={{
-                  width: `${100 - advancesPct}%`,
-                  backgroundColor: 'var(--bearish)',
-                  transition: 'width 0.5s ease',
-                }}
-              />
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '0.75rem',
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            <span style={{ color: 'var(--bullish)' }}>
-              ▲ {data.marketBreadth.advances} Advances
-            </span>
-            <span style={{ color: 'var(--bearish)' }}>
-              ▼ {data.marketBreadth.declines} Declines
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Top Gainers & Losers Ticker Strip */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '0.6rem 1rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          fontSize: '0.8rem',
-          overflowX: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <span
+      {movers && (movers.gainers.length > 0 || movers.losers.length > 0) && (
+        <div
+          className="glass-panel"
           style={{
-            fontWeight: 700,
-            fontSize: '0.75rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: 'var(--text-muted)',
+            padding: '0.6rem 1rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.3rem',
+            gap: '1rem',
+            fontSize: '0.8rem',
+            overflowX: 'auto',
+            whiteSpace: 'nowrap',
           }}
         >
-          <Activity size={13} color="var(--accent-primary)" />
-          Movers
-        </span>
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+            }}
+          >
+            <Activity size={13} color="var(--accent-primary)" />
+            Movers
+          </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          {data.gainers.slice(0, 3).map((g) => (
-            <Link
-              key={g.symbol}
-              href={`/company/${g.slug}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
-            >
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.name}</span>
-              <span style={{ color: 'var(--bullish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                {formatPercent(g.changePercent)}
-              </span>
-            </Link>
-          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {movers.gainers.slice(0, 3).map((g) => (
+              <Link
+                key={g.symbol}
+                href={`/company/${g.slug}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
+              >
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.name}</span>
+                <span style={{ color: 'var(--bullish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  {formatPercent(g.changePercent)}
+                </span>
+              </Link>
+            ))}
 
-          <span style={{ color: 'var(--border-medium)' }}>|</span>
+            <span style={{ color: 'var(--border-medium)' }}>|</span>
 
-          {data.losers.slice(0, 3).map((l) => (
-            <Link
-              key={l.symbol}
-              href={`/company/${l.slug}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
-            >
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{l.name}</span>
-              <span style={{ color: 'var(--bearish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                {formatPercent(l.changePercent)}
-              </span>
-            </Link>
-          ))}
+            {movers.losers.slice(0, 3).map((l) => (
+              <Link
+                key={l.symbol}
+                href={`/company/${l.slug}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
+              >
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{l.name}</span>
+                <span style={{ color: 'var(--bearish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  {formatPercent(l.changePercent)}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
