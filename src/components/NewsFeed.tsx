@@ -144,7 +144,7 @@ export default function NewsFeed({ initialArticles, companyId, sectorId, title =
           gap: '0.4rem',
           overflowX: 'auto',
           paddingBottom: '0.5rem',
-          scrollbarWidth: 'thin',
+          scrollbarWidth: 'none',
           flexWrap: 'nowrap',
           WebkitOverflowScrolling: 'touch',
         }}
