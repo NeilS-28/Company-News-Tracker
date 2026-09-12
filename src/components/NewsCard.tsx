@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Bookmark, Check, Building2, Layers } from 'lucide-react';
-import { formatDate, getSentimentBadge } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
 interface NewsCardProps {
@@ -52,7 +52,6 @@ export default function NewsCard({ article }: NewsCardProps) {
     }
   };
 
-  const sentiment = getSentimentBadge(article.sentiment);
 
   return (
     <article
@@ -105,20 +104,6 @@ export default function NewsCard({ article }: NewsCardProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Sentiment Badge */}
-          <span
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              background: sentiment.bg,
-              color: sentiment.text,
-              border: `1px solid ${sentiment.border}`,
-            }}
-          >
-            {sentiment.label}
-          </span>
 
           {/* Bookmark Button */}
           <button

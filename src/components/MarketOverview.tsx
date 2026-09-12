@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Activity, Building2 } from 'lucide-react';
-import { formatPercent, formatDate, getSentimentBadge } from '@/lib/utils';
+import { formatPercent, formatDate } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
 interface MarketMoversData {
@@ -100,7 +100,6 @@ export default function MarketOverview() {
         }}
       >
         {headlines.map((article, index) => {
-          const sentiment = getSentimentBadge(article.sentiment);
           const rankColors = [
             { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', text: '#f59e0b' },
             { bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)', text: '#38bdf8' },
@@ -152,19 +151,6 @@ export default function MarketOverview() {
                     </span>
                   </div>
 
-                  <span
-                    style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 600,
-                      padding: '1px 6px',
-                      borderRadius: 'var(--radius-full)',
-                      background: sentiment.bg,
-                      color: sentiment.text,
-                      border: `1px solid ${sentiment.border}`,
-                    }}
-                  >
-                    {sentiment.label}
-                  </span>
                 </div>
 
                 {/* Headline Link */}
