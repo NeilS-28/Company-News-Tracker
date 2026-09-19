@@ -227,7 +227,7 @@ export default function AuthModal() {
                   <input
                     type="text"
                     required
-                    placeholder="Neil Sharma"
+                    placeholder="Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     style={{
@@ -266,7 +266,7 @@ export default function AuthModal() {
                 <input
                   type="email"
                   required
-                  placeholder="name@example.com"
+                  placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
