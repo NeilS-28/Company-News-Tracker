@@ -3,6 +3,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import equitiesMaster from './equities_master.json';
 
 export interface DbSchema {
   companies: CompanyRow[];
@@ -90,10 +91,65 @@ function ensureDataDir() {
   }
 }
 
-function getEmptyDb(): DbSchema {
+const sectorSlugMap: Record<string, string> = {
+  'Information Technology': 'information-technology',
+  'Financial Services': 'financial-services',
+  'Oil, Gas & Consumable Fuels': 'oil-gas-and-consumable-fuels',
+  'Automobiles & Auto Components': 'automobiles-and-auto-components',
+  'Fast Moving Consumer Goods': 'fast-moving-consumer-goods',
+  'Pharmaceuticals': 'pharmaceuticals',
+  'Metals & Mining': 'metals-and-mining',
+  'Construction': 'construction',
+  'Telecommunication': 'telecommunication',
+  'Power': 'power',
+  'Consumer Durables': 'consumer-durables',
+  'Healthcare Services': 'healthcare-services',
+  'Capital Goods': 'capital-goods',
+  'Diversified': 'diversified',
+  'Services': 'services',
+  'Consumer Services': 'consumer-services',
+  'Chemicals': 'chemicals',
+  'Realty & Real Estate': 'realty-and-real-estate',
+  'Textiles & Apparel': 'textiles-and-apparel',
+  'Media & Entertainment': 'media-and-entertainment',
+  'Forest Materials & Paper': 'forest-materials-and-paper',
+};
+
+function getFallbackDb(): DbSchema {
+  const sectors: SectorRow[] = Object.keys(sectorSlugMap).map((name, i) => ({
+    id: i + 1,
+    name,
+    slug: sectorSlugMap[name],
+    description: `Equities and market tracking for ${name}`,
+  }));
+
+  const companies: CompanyRow[] = (
+    equitiesMaster as Array<{
+      name: string;
+      shortName: string;
+      ticker: string;
+      sector: string;
+      industry: string;
+      description: string;
+    }>
+  ).map((item, idx) => ({
+    id: idx + 1,
+    name: item.name,
+    shortName: item.shortName,
+    ticker: item.ticker,
+    sector: item.sector,
+    sectorSlug: sectorSlugMap[item.sector] || 'diversified',
+    industry: item.industry,
+    description: item.description,
+    logoUrl: null,
+    isNifty50: idx < 50,
+    isActive: true,
+    slug: item.ticker.toLowerCase(),
+  }));
+
   return {
-    companies: [],
-    sectors: [],
+    companies,
+    sectors,
     newsArticles: [],
     articleCompanies: [],
     articleSectors: [],
@@ -120,7 +176,7 @@ class JsonDatabase {
       // Ignore read errors on serverless
     }
 
-    this.data = getEmptyDb();
+    this.data = getFallbackDb();
     return this.data;
   }
 
