@@ -15,9 +15,9 @@ const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 
 function classifySentiment(title: string): 'positive' | 'negative' | 'neutral' {
   const titleLower = title.toLowerCase();
-  if (/surge|jump|gain|profit|rise|high|rally|bull|growth|record|soar|buy|upgrade/i.test(titleLower)) {
+  if (/surge|jump|gain|profit|rise|high|rally|bull|growth|record|soar|buy|upgrade|dividend|expansion|beat|outperform|boost/i.test(titleLower)) {
     return 'positive';
-  } else if (/plunge|fall|drop|loss|decline|slump|bear|down|probe|fine|penalty|crash|sell|downgrade/i.test(titleLower)) {
+  } else if (/plunge|fall|drop|loss|decline|slump|bear|down|probe|fine|penalty|crash|sell|downgrade|scam|fraud|warning|cautious/i.test(titleLower)) {
     return 'negative';
   }
   return 'neutral';
@@ -25,20 +25,72 @@ function classifySentiment(title: string): 'positive' | 'negative' | 'neutral' {
 
 function classifyCategory(title: string): NewsCategory {
   const titleLower = title.toLowerCase();
-  if (/result|q1|q2|q3|q4|quarter|earnings|revenue|ebitda/i.test(titleLower)) {
+  if (/result|q1|q2|q3|q4|quarter|earnings|revenue|ebitda|profit|loss|pat/i.test(titleLower)) {
     return 'results';
-  } else if (/ceo|cfo|appoint|resign|md|director|leadership/i.test(titleLower)) {
+  } else if (/ceo|cfo|appoint|resign|md|director|leadership|board|chairman/i.test(titleLower)) {
     return 'management';
-  } else if (/dividend|split|bonus|buyback/i.test(titleLower)) {
+  } else if (/dividend|split|bonus|buyback|rights issue|allotment/i.test(titleLower)) {
     return 'corporate-actions';
-  } else if (/acquire|merger|stake|deal|m&a/i.test(titleLower)) {
+  } else if (/acquire|merger|stake|deal|m&a|takeover|joint venture|partnership|investment/i.test(titleLower)) {
     return 'mna';
-  } else if (/sebi|rbi|tax|court|cci|tribunal|penalty/i.test(titleLower)) {
+  } else if (/sebi|rbi|tax|court|cci|tribunal|penalty|notice|enforcement|regulatory/i.test(titleLower)) {
     return 'regulation';
-  } else if (/target|brokerage|rating|recommend/i.test(titleLower)) {
+  } else if (/target|brokerage|rating|recommend|upgrade|downgrade|clsa|nomura|morgan|jefferies|goldman/i.test(titleLower)) {
     return 'analyst';
   }
   return 'company';
+}
+
+// Helper to tag company & sector entities from title/snippet
+function tagEntities(
+  title: string,
+  summary: string,
+  explicitCompanyId?: number,
+  explicitSectorId?: number
+): { companies: { id: number; name: string; ticker: string; slug: string }[]; sectors: { id: number; name: string; slug: string }[] } {
+  const allCompanies = db.getCompanies();
+  const allSectors = db.getSectors();
+  const text = `${title} ${summary}`.toLowerCase();
+
+  const matchedCompanies: { id: number; name: string; ticker: string; slug: string }[] = [];
+  const matchedSectors: { id: number; name: string; slug: string }[] = [];
+
+  if (explicitCompanyId) {
+    const comp = allCompanies.find(c => c.id === explicitCompanyId);
+    if (comp) matchedCompanies.push({ id: comp.id, name: comp.name, ticker: comp.ticker, slug: comp.slug });
+  } else {
+    for (const comp of allCompanies) {
+      const ticker = comp.ticker.toLowerCase();
+      const shortName = comp.shortName.toLowerCase();
+      const name = comp.name.toLowerCase();
+      
+      // Match ticker as word boundary or recognizable short name
+      const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'i');
+      if (
+        (shortName.length > 2 && text.includes(shortName)) ||
+        (name.length > 3 && text.includes(name)) ||
+        tickerRegex.test(text)
+      ) {
+        matchedCompanies.push({ id: comp.id, name: comp.name, ticker: comp.ticker, slug: comp.slug });
+        if (matchedCompanies.length >= 3) break;
+      }
+    }
+  }
+
+  if (explicitSectorId) {
+    const sec = allSectors.find(s => s.id === explicitSectorId);
+    if (sec) matchedSectors.push({ id: sec.id, name: sec.name, slug: sec.slug });
+  } else {
+    for (const sec of allSectors) {
+      const secName = sec.name.toLowerCase();
+      if (text.includes(secName) || (sec.slug && text.includes(sec.slug))) {
+        matchedSectors.push({ id: sec.id, name: sec.name, slug: sec.slug });
+        if (matchedSectors.length >= 2) break;
+      }
+    }
+  }
+
+  return { companies: matchedCompanies, sectors: matchedSectors };
 }
 
 // NewsAPI.org fetcher (if NEWS_API_KEY is configured)
@@ -48,27 +100,30 @@ async function fetchNewsApiKey(query: string, companyId?: number): Promise<NewsA
 
   try {
     const res = await fetch(
-      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query + ' India stock')}&sortBy=publishedAt&pageSize=10&apiKey=${apiKey}`,
+      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query + ' India stock')}&sortBy=publishedAt&pageSize=15&apiKey=${apiKey}`,
       { next: { revalidate: 180 } }
     );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => ({
-      id: 200000 + index + Math.floor(Math.random() * 10000),
-      title: item.title || 'Market Update',
-      summary: item.description || item.title || '',
-      source: item.source?.name || 'Financial News',
-      sourceUrl: item.url || '#',
-      publishedAt: item.publishedAt || new Date().toISOString(),
-      imageUrl: item.urlToImage || null,
-      sentiment: classifySentiment(item.title || ''),
-      category: classifyCategory(item.title || ''),
-      createdAt: item.publishedAt || new Date().toISOString(),
-      companies: companyId ? [{ id: companyId, name: query, ticker: query, slug: query.toLowerCase() }] : [],
-      sectors: [],
-    }));
+    return data.articles.map((item: any, index: number) => {
+      const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
+      return {
+        id: 200000 + index + Math.floor(Math.random() * 10000),
+        title: item.title || 'Market Update',
+        summary: item.description || item.title || '',
+        source: item.source?.name || 'Financial News',
+        sourceUrl: item.url || '#',
+        publishedAt: item.publishedAt || new Date().toISOString(),
+        imageUrl: item.urlToImage || null,
+        sentiment: classifySentiment(item.title || ''),
+        category: classifyCategory(item.title || ''),
+        createdAt: item.publishedAt || new Date().toISOString(),
+        companies,
+        sectors,
+      };
+    });
   } catch {
     return [];
   }
@@ -81,68 +136,81 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
 
   try {
     const res = await fetch(
-      `https://gnews.io/api/v4/search?q=${encodeURIComponent(query + ' stock India')}&lang=en&country=in&max=10&apikey=${apiKey}`,
+      `https://gnews.io/api/v4/search?q=${encodeURIComponent(query + ' stock India')}&lang=en&country=in&max=15&apikey=${apiKey}`,
       { next: { revalidate: 180 } }
     );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => ({
-      id: 300000 + index + Math.floor(Math.random() * 10000),
-      title: item.title || 'Market Update',
-      summary: item.description || item.title || '',
-      source: item.source?.name || 'GNews Feed',
-      sourceUrl: item.url || '#',
-      publishedAt: item.publishedAt || new Date().toISOString(),
-      imageUrl: item.image || null,
-      sentiment: classifySentiment(item.title || ''),
-      category: classifyCategory(item.title || ''),
-      createdAt: item.publishedAt || new Date().toISOString(),
-      companies: companyId ? [{ id: companyId, name: query, ticker: query, slug: query.toLowerCase() }] : [],
-      sectors: [],
-    }));
+    return data.articles.map((item: any, index: number) => {
+      const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
+      return {
+        id: 300000 + index + Math.floor(Math.random() * 10000),
+        title: item.title || 'Market Update',
+        summary: item.description || item.title || '',
+        source: item.source?.name || 'GNews Feed',
+        sourceUrl: item.url || '#',
+        publishedAt: item.publishedAt || new Date().toISOString(),
+        imageUrl: item.image || null,
+        sentiment: classifySentiment(item.title || ''),
+        category: classifyCategory(item.title || ''),
+        createdAt: item.publishedAt || new Date().toISOString(),
+        companies,
+        sectors,
+      };
+    });
   } catch {
     return [];
   }
 }
 
 // Free Google News RSS fallback (always available without API keys)
-export async function fetchGoogleNewsRss(query: string, companyId?: number, sectorId?: number): Promise<NewsArticleWithRelations[]> {
-  const cacheKey = `rss:${query}`;
-  if (newsCache[cacheKey] && newsCache[cacheKey].expiresAt > Date.now()) {
+export async function fetchGoogleNewsRss(
+  query: string,
+  companyId?: number,
+  sectorId?: number,
+  forceRefresh = false
+): Promise<NewsArticleWithRelations[]> {
+  const cacheKey = `rss:${query}:${companyId || 0}:${sectorId || 0}`;
+  if (!forceRefresh && newsCache[cacheKey] && newsCache[cacheKey].expiresAt > Date.now()) {
     return newsCache[cacheKey].items;
   }
 
   try {
-    const encodedQuery = encodeURIComponent(`${query} stock market India`);
+    const encodedQuery = encodeURIComponent(query);
     const feed = await parser.parseURL(
       `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 10).map((item, index) => {
-      const title = item.title || 'Market Update';
+    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 25).map((item, index) => {
+      const title = (item.title || 'Market Update').replace(/ - [^-]+$/, '').trim();
+      const rawSource = item.creator || (item as any).source?._ || item.source?.['$']?.['url'] || 'Financial Media';
+      const source = typeof rawSource === 'string' ? rawSource : 'Market Media';
       const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
+      const summary = item.contentSnippet || item.content || title;
+      const { companies, sectors } = tagEntities(title, summary, companyId, sectorId);
 
       return {
-        id: 100000 + index + Math.floor(Math.random() * 10000),
+        id: 100000 + index + Math.floor(Math.random() * 100000),
         title,
-        summary: item.contentSnippet || item.content || title,
-        source: item.creator || item.source?.['$']?.['url'] || 'Financial Media',
+        summary,
+        source,
         sourceUrl: item.link || '#',
         publishedAt,
         imageUrl: null,
         sentiment: classifySentiment(title),
         category: classifyCategory(title),
         createdAt: publishedAt,
-        companies: companyId ? [{ id: companyId, name: query, ticker: query, slug: query.toLowerCase() }] : [],
-        sectors: sectorId ? [{ id: sectorId, name: 'Market', slug: 'market' }] : [],
+        companies,
+        sectors,
       };
     });
 
     newsCache[cacheKey] = { items, expiresAt: Date.now() + CACHE_TTL };
     return items;
-  } catch {
+  } catch (err) {
+    console.error('RSS fetch error for query:', query, err);
     return [];
   }
 }
@@ -155,13 +223,24 @@ export interface GetNewsOptions {
   search?: string;
   limit?: number;
   offset?: number;
+  forceRefresh?: boolean;
 }
 
 export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
   articles: NewsArticleWithRelations[];
   total: number;
+  lastUpdated: string;
 }> {
-  const { companyId, sectorId, category, sentiment, search, limit = 20, offset = 0 } = options;
+  const {
+    companyId,
+    sectorId,
+    category,
+    sentiment,
+    search,
+    limit = 20,
+    offset = 0,
+    forceRefresh = false,
+  } = options;
 
   let localArticles = db.getNewsArticlesWithRelations({
     companyId,
@@ -173,31 +252,66 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     offset: 0,
   }) as NewsArticleWithRelations[];
 
-  // Live real-time external augmentation
+  let liveItems: NewsArticleWithRelations[] = [];
+
+  // Determine appropriate live query
   if (companyId) {
     const company = db.getCompanyById(companyId);
     if (company) {
       const q = company.shortName || company.name;
-      let liveItems: NewsArticleWithRelations[] = [];
-
-      // Try API keys first if user configured them
       if (process.env.NEWS_API_KEY) {
         liveItems = await fetchNewsApiKey(q, companyId);
       } else if (process.env.GNEWS_API_KEY) {
         liveItems = await fetchGNewsKey(q, companyId);
       }
-
-      // If no API key or empty response, use Google News RSS
       if (liveItems.length === 0) {
-        liveItems = await fetchGoogleNewsRss(q, companyId);
-      }
-
-      if (liveItems.length > 0) {
-        const titles = new Set(localArticles.map(a => a.title.toLowerCase().slice(0, 40)));
-        const newItems = liveItems.filter(item => !titles.has(item.title.toLowerCase().slice(0, 40)));
-        localArticles = [...newItems, ...localArticles];
+        liveItems = await fetchGoogleNewsRss(`${q} stock market India`, companyId, undefined, forceRefresh);
       }
     }
+  } else if (sectorId) {
+    const sector = db.getSectors().find(s => s.id === sectorId);
+    const sectorQuery = sector ? `${sector.name} stocks India market` : 'India stock market';
+    liveItems = await fetchGoogleNewsRss(sectorQuery, undefined, sectorId, forceRefresh);
+  } else {
+    // General market feed or category-specific live news
+    let marketQuery = 'Indian stock market business news Sensex Nifty BSE NSE';
+    if (category && category !== 'all') {
+      if (category === 'results') marketQuery = 'India corporate quarterly results earnings profit Q1 Q2 Q3 Q4';
+      else if (category === 'management') marketQuery = 'India companies CEO CFO MD appointments resignation';
+      else if (category === 'corporate-actions') marketQuery = 'India stocks dividend split bonus share buyback';
+      else if (category === 'mna') marketQuery = 'India corporate merger acquisition takeover deal';
+      else if (category === 'regulation') marketQuery = 'SEBI RBI penalty regulatory order stock market India';
+      else if (category === 'analyst') marketQuery = 'stock target price rating upgrade brokerage India';
+    }
+    liveItems = await fetchGoogleNewsRss(marketQuery, undefined, undefined, forceRefresh);
+  }
+
+  if (liveItems.length > 0) {
+    // Filter live items if category or sentiment is specified
+    let filteredLive = liveItems;
+    if (category && category !== 'all') {
+      filteredLive = filteredLive.filter(item => item.category === category);
+    }
+    if (sentiment) {
+      filteredLive = filteredLive.filter(item => item.sentiment === sentiment);
+    }
+    if (search && search.trim()) {
+      const sq = search.toLowerCase();
+      filteredLive = filteredLive.filter(
+        item => item.title.toLowerCase().includes(sq) || item.summary.toLowerCase().includes(sq)
+      );
+    }
+
+    const existingTitles = new Set(
+      localArticles.map(a => a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30))
+    );
+
+    const freshNewItems = filteredLive.filter(item => {
+      const norm = item.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+      return !existingTitles.has(norm);
+    });
+
+    localArticles = [...freshNewItems, ...localArticles];
   }
 
   // Sort by publishedAt desc
@@ -209,5 +323,6 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
   return {
     articles: paginated,
     total,
+    lastUpdated: new Date().toISOString(),
   };
 }

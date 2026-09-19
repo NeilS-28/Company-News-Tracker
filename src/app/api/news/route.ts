@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || undefined;
     const limit = Number(searchParams.get('limit') || '20');
     const offset = Number(searchParams.get('offset') || '0');
+    const forceRefresh = searchParams.get('refresh') === 'true' || searchParams.get('force') === 'true';
 
     const result = await getAggregatedNews({
       category,
@@ -21,12 +22,14 @@ export async function GET(request: NextRequest) {
       search,
       limit,
       offset,
+      forceRefresh,
     });
 
     return NextResponse.json({
       success: true,
       data: result.articles,
       total: result.total,
+      lastUpdated: result.lastUpdated,
       limit,
       offset,
     });
