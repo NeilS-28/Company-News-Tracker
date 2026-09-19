@@ -74181,73 +74181,7 @@
       "relevanceScore": 1
     }
   ],
-  "watchlists": [
-    {
-      "id": 1,
-      "userId": "usr_demo_101",
-      "name": "Tech & Growth Conviction",
-      "createdAt": "2026-09-19T20:45:10.446Z",
-      "updatedAt": "2026-09-19T20:45:10.447Z"
-    },
-    {
-      "id": 2,
-      "userId": "usr_test_A_1789850710390",
-      "name": "Alice's Green Energy",
-      "createdAt": "2026-09-19T20:45:10.870Z",
-      "updatedAt": "2026-09-19T20:45:10.870Z"
-    },
-    {
-      "id": 3,
-      "userId": "usr_test_B_1789850710391",
-      "name": "Bob's High Beta",
-      "createdAt": "2026-09-19T20:45:10.887Z",
-      "updatedAt": "2026-09-19T20:45:10.887Z"
-    }
-  ],
-  "watchlistCompanies": [
-    {
-      "id": 1,
-      "watchlistId": 1,
-      "companyId": 1,
-      "position": 0
-    },
-    {
-      "id": 2,
-      "watchlistId": 1,
-      "companyId": 2,
-      "position": 1
-    },
-    {
-      "id": 3,
-      "watchlistId": 1,
-      "companyId": 3,
-      "position": 2
-    }
-  ],
-  "users": [
-    {
-      "id": "usr_demo_101",
-      "name": "Demo Investor",
-      "email": "demo@marketpulse.in",
-      "passwordHash": "811ac87a39e76383121680924484daf1a539214e03d4bec3249c55b794600b3b7f7483769e750217f3ad85fed9e143d55300471c62f815c31dec63e248e08691",
-      "salt": "marketpulse_demo_salt_2026",
-      "createdAt": "2026-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "usr_1789850710832_x42t7a",
-      "name": "Alice Sharma",
-      "email": "alice_1789850710390@example.com",
-      "passwordHash": "dummyhash",
-      "salt": "dummysalt",
-      "createdAt": "2026-09-19T20:45:10.832Z"
-    },
-    {
-      "id": "usr_1789850710852_u0z8u8",
-      "name": "Bob Verma",
-      "email": "bob_1789850710391@example.com",
-      "passwordHash": "dummyhash",
-      "salt": "dummysalt",
-      "createdAt": "2026-09-19T20:45:10.852Z"
-    }
-  ]
+  "watchlists": [],
+  "watchlistCompanies": [],
+  "users": []
 }
