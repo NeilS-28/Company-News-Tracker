@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NEWS_CATEGORIES } from '@/lib/constants';
 import { NewsArticleWithRelations, NewsCategory } from '@/types';
 import NewsCard from './NewsCard';
-import { Search, RefreshCw, Clock, Sparkles, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Search, RefreshCw, Clock, CheckCircle2, ChevronDown } from 'lucide-react';
 
 interface NewsFeedProps {
   initialArticles?: NewsArticleWithRelations[];
@@ -51,26 +51,24 @@ export default function NewsFeed({
   const [relativeTime, setRelativeTime] = useState<string>('Just now');
   const [showRefreshSuccess, setShowRefreshSuccess] = useState(false);
 
-  // Auto-refresh configuration (default to 15m as requested)
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshOption>('15m');
-  const [secondsLeft, setSecondsLeft] = useState<number>(INTERVAL_SECONDS['15m']);
+  // Lazy initialize interval preference from localStorage
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshOption>(() => {
+    if (typeof window === 'undefined') return '15m';
+    try {
+      const saved = localStorage.getItem('pulse_news_refresh_interval') as AutoRefreshOption;
+      if (saved && INTERVAL_SECONDS[saved] !== undefined) {
+        return saved;
+      }
+    } catch {
+      // Ignore
+    }
+    return '15m';
+  });
+
   const [showIntervalMenu, setShowIntervalMenu] = useState(false);
 
   const pillsRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Load saved interval preference from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('pulse_news_refresh_interval') as AutoRefreshOption;
-      if (saved && INTERVAL_SECONDS[saved] !== undefined) {
-        setAutoRefreshInterval(saved);
-        setSecondsLeft(INTERVAL_SECONDS[saved]);
-      }
-    } catch {
-      // Ignore localStorage errors in SSR or restricted environments
-    }
-  }, []);
 
   // Close interval dropdown on outside click
   useEffect(() => {
@@ -97,91 +95,96 @@ export default function NewsFeed({
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
-  const fetchNews = useCallback(
-    async (resetPage = false, force = false) => {
-      setLoading(true);
-      if (force) {
-        setIsManualRefreshing(true);
-      }
-      try {
-        const currentPage = resetPage ? 0 : page;
-        const params = new URLSearchParams();
-        if (category !== 'all') params.set('category', category);
-        if (sentiment !== 'all') params.set('sentiment', sentiment);
-        if (search.trim()) params.set('search', search.trim());
-        if (companyId) params.set('companyId', String(companyId));
-        if (sectorId) params.set('sectorId', String(sectorId));
-        if (force) params.set('refresh', 'true');
-        params.set('limit', '15');
-        params.set('offset', String(currentPage * 15));
+  // Async fetch helper for manual refresh / pagination
+  const fetchNewsAsync = async (resetPage = false, force = false) => {
+    setLoading(true);
+    if (force) {
+      setIsManualRefreshing(true);
+    }
+    try {
+      const currentPage = resetPage ? 0 : page;
+      const params = new URLSearchParams();
+      if (category !== 'all') params.set('category', category);
+      if (sentiment !== 'all') params.set('sentiment', sentiment);
+      if (search.trim()) params.set('search', search.trim());
+      if (companyId) params.set('companyId', String(companyId));
+      if (sectorId) params.set('sectorId', String(sectorId));
+      if (force) params.set('refresh', 'true');
+      params.set('limit', '15');
+      params.set('offset', String(currentPage * 15));
 
-        const res = await fetch(`/api/news?${params.toString()}`);
-        const json = await res.json();
-        if (json.success) {
-          if (resetPage || currentPage === 0) {
-            setArticles(json.data);
-          } else {
-            setArticles((prev) => [...prev, ...json.data]);
-          }
-          setTotal(json.total);
-          if (resetPage) setPage(0);
-
-          const now = new Date();
-          setLastUpdated(now);
-          setRelativeTime('Just now');
-
-          if (force) {
-            setShowRefreshSuccess(true);
-            setTimeout(() => setShowRefreshSuccess(false), 2500);
-          }
+      const res = await fetch(`/api/news?${params.toString()}`);
+      const json = await res.json();
+      if (json.success) {
+        if (resetPage || currentPage === 0) {
+          setArticles(json.data);
+        } else {
+          setArticles((prev) => [...prev, ...json.data]);
         }
-      } catch (err) {
-        console.error('Failed to fetch news feed', err);
-      } finally {
-        setLoading(false);
-        setIsManualRefreshing(false);
-      }
-    },
-    [category, sentiment, search, companyId, sectorId, page]
-  );
+        setTotal(json.total);
+        if (resetPage) setPage(0);
 
-  // Initial and dependency-driven fetch
+        const now = new Date();
+        setLastUpdated(now);
+        setRelativeTime('Just now');
+
+        if (force) {
+          setShowRefreshSuccess(true);
+          setTimeout(() => setShowRefreshSuccess(false), 2500);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch news feed', err);
+    } finally {
+      setLoading(false);
+      setIsManualRefreshing(false);
+    }
+  };
+
+  // Initial and dependency-driven fetch via promise without sync setState
   useEffect(() => {
-    fetchNews(true, false);
-  }, [category, sentiment, companyId, sectorId]);
+    let isMounted = true;
+    const params = new URLSearchParams();
+    if (category !== 'all') params.set('category', category);
+    if (sentiment !== 'all') params.set('sentiment', sentiment);
+    if (search.trim()) params.set('search', search.trim());
+    if (companyId) params.set('companyId', String(companyId));
+    if (sectorId) params.set('sectorId', String(sectorId));
+    params.set('limit', '15');
+    params.set('offset', '0');
+
+    fetch(`/api/news?${params.toString()}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (isMounted && json.success) {
+          setArticles(json.data);
+          setTotal(json.total);
+          setPage(0);
+          setLastUpdated(new Date());
+          setRelativeTime('Just now');
+        }
+      })
+      .catch((err) => console.error('Failed to fetch news', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [category, sentiment, companyId, sectorId, search]);
 
   // Handle interval timer ticking & relative time ticker
   useEffect(() => {
     const timer = setInterval(() => {
-      // 1. Update relative time string
       setRelativeTime(getRelativeTimeString(lastUpdated));
-
-      // 2. Decrement auto-refresh countdown
-      if (autoRefreshInterval !== 'off') {
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            // Trigger auto-refresh
-            fetchNews(true, true);
-            return INTERVAL_SECONDS[autoRefreshInterval];
-          }
-          return prev - 1;
-        });
-      }
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [autoRefreshInterval, lastUpdated, fetchNews]);
+  }, [lastUpdated]);
 
   const handleManualRefresh = () => {
-    fetchNews(true, true);
-    if (autoRefreshInterval !== 'off') {
-      setSecondsLeft(INTERVAL_SECONDS[autoRefreshInterval]);
-    }
+    fetchNewsAsync(true, true);
   };
 
   const handleIntervalChange = (opt: AutoRefreshOption) => {
     setAutoRefreshInterval(opt);
-    setSecondsLeft(INTERVAL_SECONDS[opt]);
     setShowIntervalMenu(false);
     try {
       localStorage.setItem('pulse_news_refresh_interval', opt);
@@ -192,7 +195,7 @@ export default function NewsFeed({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchNews(true, false);
+    fetchNewsAsync(true, false);
   };
 
   const handleLoadMore = () => {

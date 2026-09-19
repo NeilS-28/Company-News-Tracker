@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Bookmark, Check, Building2, Layers } from 'lucide-react';
+import { ExternalLink, Bookmark, Building2, Layers } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
@@ -15,11 +15,17 @@ export default function NewsCard({ article }: NewsCardProps) {
   const [isRead, setIsRead] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       const bmarks = JSON.parse(localStorage.getItem('mp-bookmarks') || '[]');
-      setIsBookmarked(bmarks.includes(article.id));
       const reads = JSON.parse(localStorage.getItem('mp-reads') || '[]');
-      setIsRead(reads.includes(article.id));
+      const inBmarks = bmarks.includes(article.id);
+      const inReads = reads.includes(article.id);
+
+      queueMicrotask(() => {
+        setIsBookmarked(inBmarks);
+        setIsRead(inReads);
+      });
     } catch {
       // Ignore
     }
@@ -51,7 +57,6 @@ export default function NewsCard({ article }: NewsCardProps) {
       // Ignore
     }
   };
-
 
   return (
     <article
@@ -104,7 +109,6 @@ export default function NewsCard({ article }: NewsCardProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-
           {/* Bookmark Button */}
           <button
             onClick={toggleBookmark}

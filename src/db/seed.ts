@@ -46,11 +46,6 @@ const sectors = sectorData.map((s, i) => ({
   description: s.description,
 }));
 
-function _getSectorId(name: string): number {
-  const sector = sectors.find(s => s.name === name);
-  if (!sector) throw new Error(`Sector not found: ${name}`);
-  return sector.id;
-}
 
 function getSectorSlug(name: string): string {
   const sector = sectors.find(s => s.name === name);

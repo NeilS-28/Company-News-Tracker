@@ -114,8 +114,12 @@ class JsonDatabase {
   }
 
   private save() {
-    ensureDataDir();
-    fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2), 'utf-8');
+    try {
+      ensureDataDir();
+      fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2), 'utf-8');
+    } catch {
+      // In read-only serverless environments (e.g. Vercel), fallback to in-memory state
+    }
   }
 
   // Invalidate cache to re-read from disk on next access (useful for API routes)

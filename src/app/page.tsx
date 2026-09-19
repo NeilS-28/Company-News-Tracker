@@ -5,7 +5,7 @@ import Link from 'next/link';
 import MarketOverview from '@/components/MarketOverview';
 import NewsFeed from '@/components/NewsFeed';
 import CompanyGrid from '@/components/CompanyGrid';
-import { Newspaper, Building2, Layers, Sparkles, TrendingUp, Star, Radar } from 'lucide-react';
+import { Newspaper, Building2, Layers, Star, Radar } from 'lucide-react';
 import DealRadar from '@/components/DealRadar';
 
 export default function HomePage() {

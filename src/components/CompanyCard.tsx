@@ -81,6 +81,23 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                 NSE / BSE
               </span>
             )}
+
+            {/* Quote Status Badge */}
+            {quote?.status && (
+              <span
+                style={{
+                  fontSize: '0.6rem',
+                  fontWeight: 600,
+                  padding: '1px 4px',
+                  borderRadius: '3px',
+                  background: quote.status === 'live' ? 'rgba(34, 197, 94, 0.12)' : 'var(--border-subtle)',
+                  color: quote.status === 'live' ? '#22c55e' : 'var(--text-muted)',
+                }}
+                title={quote.source ? `Data source: ${quote.source}` : undefined}
+              >
+                {quote.status === 'live' ? '● LIVE' : 'BASE'}
+              </span>
+            )}
           </div>
           <Link
             href={`/company/${company.slug}`}

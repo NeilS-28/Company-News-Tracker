@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Layers, ChevronRight, Building2 } from 'lucide-react';
+import { Layers, ChevronRight } from 'lucide-react';
 import type { SectorWithCompanies } from '@/types';
 
 export default function SectorsPage() {

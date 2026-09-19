@@ -1,55 +1,55 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
+const subscribe = (callback: () => void) => {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+};
+
+const getSnapshot = () => {
+  if (typeof window === 'undefined') return 'dark';
+  return (localStorage.getItem('pulse_theme') as 'dark' | 'light') || 'dark';
+};
+
+const getServerSnapshot = () => 'dark';
+
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [mounted, setMounted] = useState(false);
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('marketpulse-theme') as 'dark' | 'light' | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setTheme('light');
-      document.documentElement.setAttribute('data-theme', 'light');
-    }
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('marketpulse-theme', next);
-    document.documentElement.setAttribute('data-theme', next);
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('pulse_theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    window.dispatchEvent(new Event('storage'));
   };
-
-  if (!mounted) {
-    return <div style={{ width: 36, height: 36 }} />;
-  }
 
   return (
     <button
       onClick={toggleTheme}
-      aria-label="Toggle light/dark theme"
+      className="theme-toggle-btn"
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      aria-label="Toggle Theme"
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         width: 36,
         height: 36,
         borderRadius: 'var(--radius-md)',
-        background: 'var(--bg-glass)',
+        background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
         color: 'var(--text-secondary)',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease',
       }}
     >
-      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      {theme === 'dark' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#6366f1" />}
     </button>
   );
 }

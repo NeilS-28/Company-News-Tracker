@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Radar, ExternalLink, ShieldAlert, CheckCircle2, XCircle, AlertCircle, HelpCircle, FileText, Globe } from 'lucide-react';
+import { Radar, ExternalLink, CheckCircle2, XCircle, AlertCircle, HelpCircle, FileText, Globe, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { DealRadarItem, DealStatus } from '@/types';
 
@@ -19,30 +19,30 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
   const [search, setSearch] = useState('');
   const [companyIR, setCompanyIR] = useState<{ irUrl: string; pressReleaseUrl?: string } | null>(null);
 
-  const loadDeals = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filter !== 'all') params.set('status', filter);
-      if (companyId) params.set('companyId', String(companyId));
-      if (search.trim()) params.set('search', search.trim());
-
-      const res = await fetch(`/api/deals?${params.toString()}`);
-      const json = await res.json();
-      if (json.success) {
-        setDeals(json.data);
-        if (json.irInfo) setCompanyIR(json.irInfo);
-      }
-    } catch {
-      // Fallback
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadDeals();
-  }, [filter, companyId]);
+    let isMounted = true;
+    const params = new URLSearchParams();
+    if (filter !== 'all') params.set('status', filter);
+    if (companyId) params.set('companyId', String(companyId));
+    if (search.trim()) params.set('search', search.trim());
+
+    fetch(`/api/deals?${params.toString()}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (isMounted && json.success) {
+          setDeals(json.data);
+          if (json.irInfo) setCompanyIR(json.irInfo);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filter, companyId, search]);
 
   const getStatusBadge = (status: DealStatus) => {
     switch (status) {
@@ -166,39 +166,69 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
         )}
       </div>
 
-      {/* Filter Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.4rem',
-          overflowX: 'auto',
-          paddingBottom: '0.25rem',
-          scrollbarWidth: 'none',
-        }}
-      >
-        {statusFilters.map((tab) => {
-          const isActive = filter === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id as DealStatus | 'all')}
-              style={{
-                whiteSpace: 'nowrap',
-                padding: '0.35rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.8rem',
-                fontWeight: isActive ? 700 : 500,
-                background: isActive ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                color: isActive ? '#080c14' : 'var(--text-secondary)',
-                border: `1px solid ${isActive ? 'transparent' : 'var(--border-subtle)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* Filter Tabs & Search */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.4rem',
+            overflowX: 'auto',
+            paddingBottom: '0.25rem',
+            scrollbarWidth: 'none',
+          }}
+        >
+          {statusFilters.map((tab) => {
+            const isActive = filter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id as DealStatus | 'all')}
+                style={{
+                  whiteSpace: 'nowrap',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.8rem',
+                  fontWeight: isActive ? 700 : 500,
+                  background: isActive ? 'var(--accent-primary)' : 'var(--bg-glass)',
+                  color: isActive ? '#080c14' : 'var(--text-secondary)',
+                  border: `1px solid ${isActive ? 'transparent' : 'var(--border-subtle)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.3rem 0.6rem',
+            fontSize: '0.8rem',
+          }}
+        >
+          <Search size={13} color="var(--text-muted)" />
+          <input
+            type="text"
+            placeholder="Search deals..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
+              width: 120,
+              fontSize: '0.8rem',
+            }}
+          />
+        </div>
       </div>
 
       {/* Feed List */}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Star, Layers, Building, TrendingUp, Activity } from 'lucide-react';
+import { Search, Activity } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import SearchDialog from './SearchDialog';
 

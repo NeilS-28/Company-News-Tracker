@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CompanyWithQuote } from '@/types';
 import CompanyCard from './CompanyCard';
 
@@ -51,19 +51,23 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
 
   // Fetch available sectors
   useEffect(() => {
+    let isMounted = true;
     fetch('/api/sectors')
       .then((res) => res.json())
       .then((json) => {
-        if (json.success) {
+        if (isMounted && json.success) {
           setSectorsList(json.data);
         }
       })
       .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Fetch companies with pagination & filters
   useEffect(() => {
-    setLoading(true);
+    let isMounted = true;
     const params = new URLSearchParams();
     if (sector !== 'all') params.set('sector', sector);
     if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
@@ -75,14 +79,20 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
     fetch(`/api/companies?${params.toString()}`)
       .then((res) => res.json())
       .then((json) => {
-        if (json.success) {
+        if (isMounted && json.success) {
           setCompanies(json.data);
           setTotalPages(json.totalPages || 1);
           setTotalCount(json.total || 0);
+          setLoading(false);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [sector, debouncedSearch, filter, sort, page]);
 
   const goToPage = (newPage: number) => {

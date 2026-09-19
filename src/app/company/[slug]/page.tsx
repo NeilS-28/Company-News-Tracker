@@ -4,12 +4,10 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Building2,
   TrendingUp,
   TrendingDown,
   Layers,
   Globe,
-  Share2,
   ExternalLink,
 } from 'lucide-react';
 import { formatCurrency, formatPercent, formatPoints } from '@/lib/utils';
@@ -187,8 +185,8 @@ export default function CompanyPage({
             {company.description}
           </p>
 
-          {COMPANY_IR_PORTALS[company.ticker] && (
-            <div style={{ marginTop: '0.75rem' }}>
+          <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {COMPANY_IR_PORTALS[company.ticker] && (
               <a
                 href={COMPANY_IR_PORTALS[company.ticker].irUrl}
                 target="_blank"
@@ -199,16 +197,62 @@ export default function CompanyPage({
                   gap: '0.35rem',
                   fontSize: '0.8rem',
                   fontWeight: 600,
+                  padding: '4px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
                   color: 'var(--accent-primary)',
                   textDecoration: 'none',
                 }}
               >
                 <Globe size={13} />
-                <span>Official Investor Relations & Press Releases</span>
+                <span>Investor Relations</span>
                 <ExternalLink size={12} />
               </a>
-            </div>
-          )}
+            )}
+            <a
+              href={`https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(company.ticker)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+              }}
+            >
+              <span>NSE Equity Portal</span>
+              <ExternalLink size={12} />
+            </a>
+            <a
+              href="https://www.bseindia.com/corporates/ann.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+              }}
+            >
+              <span>BSE Corporate Filings</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
         </div>
 
         {/* Live Quote Box */}
@@ -225,9 +269,25 @@ export default function CompanyPage({
               minWidth: 260,
             }}
           >
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              NSE Real-Time / Last Close
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                NSE Quote / Last Close
+              </span>
+              {(quote as { status?: string }).status && (
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: (quote as { status?: string }).status === 'live' ? 'rgba(34, 197, 94, 0.15)' : 'var(--border-subtle)',
+                    color: (quote as { status?: string }).status === 'live' ? '#22c55e' : 'var(--text-muted)',
+                  }}
+                >
+                  {(quote as { status?: string }).status === 'live' ? '● LIVE' : 'BASELINE'}
+                </span>
+              )}
+            </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
               <span style={{ fontSize: '1.85rem', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                 {formatCurrency(quote.price)}

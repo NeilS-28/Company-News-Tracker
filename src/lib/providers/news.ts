@@ -2,6 +2,36 @@ import Parser from 'rss-parser';
 import { db } from '@/db';
 import { NewsArticleWithRelations, NewsCategory } from '@/types';
 
+// Typed interfaces for external API responses
+interface NewsApiArticle {
+  title?: string;
+  description?: string;
+  source?: { name?: string };
+  url?: string;
+  publishedAt?: string;
+  urlToImage?: string | null;
+}
+
+interface GNewsArticle {
+  title?: string;
+  description?: string;
+  source?: { name?: string };
+  url?: string;
+  publishedAt?: string;
+  image?: string | null;
+}
+
+interface RssFeedItem {
+  title?: string;
+  link?: string;
+  isoDate?: string;
+  pubDate?: string;
+  contentSnippet?: string;
+  content?: string;
+  creator?: string;
+  source?: { _?: string };
+}
+
 const parser = new Parser({
   headers: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -107,7 +137,7 @@ async function fetchNewsApiKey(query: string, companyId?: number): Promise<NewsA
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => {
+    return data.articles.map((item: NewsApiArticle, index: number) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
         id: 200000 + index + Math.floor(Math.random() * 10000),
@@ -143,7 +173,7 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => {
+    return data.articles.map((item: GNewsArticle, index: number) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
         id: 300000 + index + Math.floor(Math.random() * 10000),
@@ -201,7 +231,7 @@ export async function fetchGoogleNewsRss(
     const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 35).map((item, index) => {
       const lastDash = (item.title || '').lastIndexOf(' - ');
       let title = item.title || 'Market Update';
-      let source = (item as any).source?._ || item.creator || 'Financial News';
+      let source = (item as RssFeedItem).source?._ || item.creator || 'Financial News';
       if (lastDash !== -1) {
         title = (item.title || '').substring(0, lastDash).trim();
         source = (item.title || '').substring(lastDash + 3).trim();

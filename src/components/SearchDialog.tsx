@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { Search, X, TrendingUp, Building2, Layers } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, X, Building2, Layers } from 'lucide-react';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { MarketQuote } from '@/types';
 
@@ -24,35 +24,62 @@ interface SearchDialogProps {
 }
 
 export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = useCallback(() => {
+    setQuery('');
+    setResults([]);
+    setSelectedIndex(-1);
+    onClose();
+  }, [onClose]);
+
+  const handleSelect = useCallback((item: SearchItem) => {
+    handleClose();
+    if (item.type === 'company') {
+      router.push(`/company/${item.slug}`);
+    } else {
+      router.push(`/sector/${item.slug}`);
+    }
+  }, [handleClose, router]);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      setQuery('');
-      setResults([]);
     }
   }, [isOpen]);
 
-  // Handle escape key
+  // Handle keyboard navigation & escape
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+      if (e.key === 'Escape') {
+        handleClose();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      } else if (e.key === 'Enter') {
+        if (selectedIndex >= 0 && selectedIndex < results.length) {
+          e.preventDefault();
+          handleSelect(results[selectedIndex]);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose, results, selectedIndex, handleSelect]);
 
   // Search API fetch with debounce
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
       return;
     }
 
@@ -63,6 +90,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
         const json = await res.json();
         if (json.success) {
           setResults(json.data);
+          setSelectedIndex(json.data.length > 0 ? 0 : -1);
         }
       } catch {
         // Fallback
@@ -74,11 +102,19 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    if (!val.trim()) {
+      setResults([]);
+      setSelectedIndex(-1);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       style={{
         position: 'fixed',
         inset: 0,
@@ -120,7 +156,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
             type="text"
             placeholder="Search 2,500+ NSE & BSE companies, tickers (e.g. RELIANCE, ZOMATO, TRENT), sectors..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             style={{
               flex: 1,
               background: 'transparent',
@@ -131,7 +167,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
           />
           {query && (
             <button
-              onClick={() => setQuery('')}
+              onClick={() => handleQueryChange('')}
               style={{ color: 'var(--text-muted)' }}
             >
               <X size={18} />
@@ -151,7 +187,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
         </div>
 
         {/* Results Body */}
-        <div style={{ maxHeight: 380, overflowY: 'auto', padding: '0.5rem' }}>
+        <div role="listbox" style={{ maxHeight: 380, overflowY: 'auto', padding: '0.5rem' }}>
           {loading && (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               Searching Indian equities & sectors...
@@ -172,25 +208,27 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
           {!loading && results.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {results.map((item) => {
+              {results.map((item, idx) => {
+                const isSelected = idx === selectedIndex;
                 if (item.type === 'company') {
                   const isPositive = (item.quote?.changePercent ?? 0) >= 0;
                   return (
-                    <Link
+                    <div
                       key={`comp-${item.id}`}
-                      href={`/company/${item.slug}`}
-                      onClick={onClose}
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() => setSelectedIndex(idx)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '0.75rem 1rem',
                         borderRadius: 'var(--radius-md)',
-                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        background: isSelected ? 'var(--bg-card-hover)' : 'transparent',
                         transition: 'background 0.15s ease',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-card-hover)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div
@@ -248,27 +286,28 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                           </div>
                         </div>
                       )}
-                    </Link>
+                    </div>
                   );
                 }
 
                 // Sector item
                 return (
-                  <Link
+                  <div
                     key={`sec-${item.id}`}
-                    href={`/sector/${item.slug}`}
-                    onClick={onClose}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setSelectedIndex(idx)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '0.75rem 1rem',
                       borderRadius: 'var(--radius-md)',
-                      textDecoration: 'none',
+                      cursor: 'pointer',
+                      background: isSelected ? 'var(--bg-card-hover)' : 'transparent',
                       transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-card-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div
@@ -298,7 +337,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                     <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)' }}>
                       View Sector &rarr;
                     </span>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

@@ -1,5 +1,4 @@
 import Parser from 'rss-parser';
-import { db } from '@/db';
 import { DealRadarItem, DealStatus } from '@/types';
 
 const parser = new Parser({

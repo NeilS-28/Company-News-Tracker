@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Layers, Building2, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { Sector, CompanyWithQuote, NewsArticleWithRelations } from '@/types';
 import NewsCard from '@/components/NewsCard';

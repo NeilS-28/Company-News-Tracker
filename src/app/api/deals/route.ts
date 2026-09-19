@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.toLowerCase();
 
     // 1. Get database articles that relate to M&A, corporate actions, or deals
-    let dbArticles = db.getNewsArticlesWithRelations({
+    const dbArticles = db.getNewsArticlesWithRelations({
       companyId,
       limit: 50,
     });

@@ -103,6 +103,8 @@ export async function getMarketQuote(symbol: string): Promise<MarketQuote> {
             dayLow: fhData.l || price,
             volume: 0,
             timestamp: new Date().toISOString(),
+            status: 'live',
+            source: 'Finnhub',
           };
 
           cache[cacheKey] = { quote, expiresAt: Date.now() + CACHE_TTL_MS };
@@ -153,6 +155,8 @@ export async function getMarketQuote(symbol: string): Promise<MarketQuote> {
           dayLow: meta.regularMarketDayLow || price,
           volume: meta.regularMarketVolume || 0,
           timestamp: new Date().toISOString(),
+          status: 'live',
+          source: 'Yahoo Finance',
         };
 
         cache[cacheKey] = { quote, expiresAt: Date.now() + CACHE_TTL_MS };
@@ -163,7 +167,7 @@ export async function getMarketQuote(symbol: string): Promise<MarketQuote> {
     // Network or parse issue, fall through to fallback baseline
   }
 
-  // Fallback to baseline
+  // Fallback to baseline (honest static reference — no simulated fluctuation)
   const base = BASELINE_DATA[cleanSymbol] || {
     name: cleanSymbol,
     price: 1500.0,
@@ -171,25 +175,22 @@ export async function getMarketQuote(symbol: string): Promise<MarketQuote> {
     changePercent: 0.84,
   };
 
-  // Add realistic micro-variation based on current minutes so numbers feel alive
-  const minuteVariance = (Math.sin(Date.now() / 60000 + cleanSymbol.length) * 0.002);
-  const adjustedPrice = Number((base.price * (1 + minuteVariance)).toFixed(2));
   const prevClose = base.price - base.change;
-  const change = Number((adjustedPrice - prevClose).toFixed(2));
-  const changePercent = Number(((change / prevClose) * 100).toFixed(2));
 
   const quote: MarketQuote = {
     symbol: cleanSymbol,
     name: base.name,
-    price: adjustedPrice,
-    change,
-    changePercent,
+    price: base.price,
+    change: base.change,
+    changePercent: base.changePercent,
     previousClose: prevClose,
-    open: prevClose + (change * 0.3),
-    dayHigh: adjustedPrice + Math.abs(change * 0.8),
-    dayLow: adjustedPrice - Math.abs(change * 0.8),
-    volume: Math.floor(500000 + Math.abs(Math.sin(cleanSymbol.length) * 2000000)),
+    open: prevClose + (base.change * 0.3),
+    dayHigh: base.price + Math.abs(base.change * 0.8),
+    dayLow: base.price - Math.abs(base.change * 0.8),
+    volume: 0,
     timestamp: new Date().toISOString(),
+    status: 'baseline',
+    source: 'Baseline Ref',
   };
 
   cache[cacheKey] = { quote, expiresAt: Date.now() + CACHE_TTL_MS };

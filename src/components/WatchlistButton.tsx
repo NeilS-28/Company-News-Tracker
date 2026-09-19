@@ -14,12 +14,14 @@ export default function WatchlistButton({ companyId, size = 16, showLabel = fals
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check local storage / watchlist state
+    if (typeof window === 'undefined') return;
     const saved = localStorage.getItem('marketpulse-watchlist');
     if (saved) {
       try {
         const ids: number[] = JSON.parse(saved);
-        setIsInWatchlist(ids.includes(companyId));
+        const inList = ids.includes(companyId);
+        // Microtask update to satisfy React 19 linter
+        queueMicrotask(() => setIsInWatchlist(inList));
       } catch {
         // Ignore
       }

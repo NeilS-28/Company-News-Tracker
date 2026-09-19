@@ -109,6 +109,10 @@ export interface MarketQuote {
   dayLow: number;
   volume: number;
   timestamp: string;
+  /** Indicates the freshness / origin of this quote */
+  status: 'live' | 'delayed' | 'baseline';
+  /** The data provider name (e.g. 'Yahoo Finance', 'Finnhub', 'Baseline Ref') */
+  source?: string;
 }
 
 export interface CompanyWithQuote extends Company {
