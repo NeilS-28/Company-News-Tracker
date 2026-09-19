@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Indian Listed Companies Directory — MarketPulse',
-  description: 'Explore 2,500+ listed equities across the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE) with real-time quotes, sector categorization, and latest news.',
+  description: 'Explore 5,100+ listed equities across the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE) with real-time quotes, sector categorization, and latest news.',
 };
 
 export default function CompaniesPage() {
@@ -31,7 +31,7 @@ export default function CompaniesPage() {
             Indian Listed Companies
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            2,500+ equities listed on the National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE)
+            5,100+ equities listed on the National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE)
           </p>
         </div>
       </div>

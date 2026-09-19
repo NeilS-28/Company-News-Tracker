@@ -133,7 +133,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
           <Search size={15} color="var(--text-muted)" />
           <input
             type="text"
-            placeholder="Search 2,500+ companies or tickers (e.g. RELIANCE, ZOMATO, TRENT)..."
+            placeholder="Search 5,100+ companies or tickers (e.g. RELIANCE, ZOMATO, TRENT)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{

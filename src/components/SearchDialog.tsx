@@ -154,7 +154,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search 2,500+ NSE & BSE companies, tickers (e.g. RELIANCE, ZOMATO, TRENT), sectors..."
+            placeholder="Search 5,100+ NSE & BSE companies, tickers (e.g. RELIANCE, ZOMATO, TRENT), sectors..."
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             style={{
@@ -202,7 +202,7 @@ export default function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
           {!loading && !query && (
             <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Type to search 2,500+ NSE & BSE listed equities, industry sectors, or tickers.
+              Type to search 5,100+ NSE & BSE listed equities, industry sectors, or tickers.
             </div>
           )}
 

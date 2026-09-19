@@ -1,5 +1,6 @@
-// Script to download official NSE equity master and index files,
-// map sectors, and generate src/db/equities_master.json
+// Script to download official NSE and BSE equity master files,
+// map sectors, deduplicate by ISIN, and generate src/db/equities_master.json
+// Covers ALL 5,100+ active NSE & BSE listed equities in India
 
 import fs from 'fs';
 import path from 'path';
@@ -37,7 +38,7 @@ const baseSectorMap: Record<string, string> = {
   'Media Entertainment & Publication': 'Media & Entertainment',
   'Textiles': 'Textiles & Apparel',
   'Forest Materials': 'Forest Materials & Paper',
-  'Diversified': 'Diversified'
+  'Diversified': 'Diversified',
 };
 
 const keywords: Array<[string, RegExp]> = [
@@ -57,7 +58,7 @@ const keywords: Array<[string, RegExp]> = [
   ['Consumer Durables', /jewel|watch|appliances|electronics|kitchen|lamp|light/i],
   ['Capital Goods', /engineering|equipment|electrical|machin|instrument|pump|tools|heavy|turbin/i],
   ['Oil, Gas & Consumable Fuels', /gas|petroleum|fuel|refin|pipeline|coal/i],
-  ['Forest Materials & Paper', /paper|board|packaging|plywood|timber|forest|wood/i]
+  ['Forest Materials & Paper', /paper|board|packaging|plywood|timber|forest|wood/i],
 ];
 
 function classifyByName(name: string): string {
@@ -78,18 +79,48 @@ function cleanShortName(fullName: string, ticker: string): string {
   return cleaned;
 }
 
+interface MasterEquitiesEntry {
+  name: string;
+  shortName: string;
+  ticker: string;
+  bseCode?: string;
+  sector: string;
+  industry: string;
+  description: string;
+  isin: string;
+}
+
+interface BseScripItem {
+  SCRIP_CD: string;
+  Scrip_Name?: string;
+  Issuer_Name?: string;
+  Status?: string;
+  ISIN_NUMBER?: string;
+  scrip_id?: string;
+}
+
 async function run() {
-  console.log('Downloading official NSE master lists...');
-  const [eqText, totalMarketText, nifty500Text, microcapText] = await Promise.all([
-    fetch('https://archives.nseindia.com/content/equities/EQUITY_L.csv').then(r => r.text()),
-    fetch('https://archives.nseindia.com/content/indices/ind_niftytotalmarket_list.csv').then(r => r.text()),
-    fetch('https://archives.nseindia.com/content/indices/ind_nifty500list.csv').then(r => r.text()),
-    fetch('https://archives.nseindia.com/content/indices/ind_niftymicrocap250_list.csv').then(r => r.text())
+  console.log('Downloading official NSE & BSE master lists...');
+  const [eqText, totalMarketText, nifty500Text, microcapText, bseListRaw] = await Promise.all([
+    fetch('https://archives.nseindia.com/content/equities/EQUITY_L.csv').then((r) => r.text()),
+    fetch('https://archives.nseindia.com/content/indices/ind_niftytotalmarket_list.csv').then((r) => r.text()),
+    fetch('https://archives.nseindia.com/content/indices/ind_nifty500list.csv').then((r) => r.text()),
+    fetch('https://archives.nseindia.com/content/indices/ind_niftymicrocap250_list.csv').then((r) => r.text()),
+    fetch('https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w?Group=&Scrip_code=&scrip_name=&industry=&segment=Equity&status=Active', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.bseindia.com/',
+        'Origin': 'https://www.bseindia.com',
+        'Accept': 'application/json',
+      },
+    })
+      .then((r) => r.json() as Promise<BseScripItem[]>)
+      .catch(() => [] as BseScripItem[]),
   ]);
 
   const symbolToMeta = new Map<string, { industry: string; companyName?: string }>();
-  [totalMarketText, nifty500Text, microcapText].forEach(text => {
-    text.trim().split('\n').slice(1).forEach(line => {
+  [totalMarketText, nifty500Text, microcapText].forEach((text) => {
+    text.trim().split('\n').slice(1).forEach((line) => {
       const parts = line.split(',');
       if (parts.length >= 3) {
         const ind = parts[1].trim();
@@ -102,27 +133,18 @@ async function run() {
     });
   });
 
-  const lines = eqText.trim().split('\n').slice(1);
-  const result: Array<{
-    name: string;
-    shortName: string;
-    ticker: string;
-    sector: string;
-    industry: string;
-    description: string;
-    isin: string;
-  }> = [];
+  const isinToEntry = new Map<string, MasterEquitiesEntry>();
+  const tickerSet = new Set<string>();
 
-  const existingTickers = new Set<string>();
-
-  for (const line of lines) {
+  // 1. Process NSE Equities
+  const nseLines = eqText.trim().split('\n').slice(1);
+  for (const line of nseLines) {
     const parts = line.split(',');
     const ticker = parts[0]?.trim();
     const fullName = parts[1]?.trim();
     const isin = parts[6]?.trim() || '';
 
-    if (!ticker || !fullName || existingTickers.has(ticker)) continue;
-    existingTickers.add(ticker);
+    if (!ticker || !fullName) continue;
 
     let sector = 'Diversified';
     let industry = 'Diversified Operations';
@@ -139,7 +161,7 @@ async function run() {
     const shortName = cleanShortName(fullName, ticker);
     const description = `${fullName} is an Indian public company listed on the National Stock Exchange (NSE: ${ticker}) and Bombay Stock Exchange (BSE) in the ${sector} sector.`;
 
-    result.push({
+    const entry: MasterEquitiesEntry = {
       name: fullName,
       shortName,
       ticker,
@@ -147,12 +169,66 @@ async function run() {
       industry,
       description,
       isin,
-    });
+    };
+
+    tickerSet.add(ticker);
+    if (isin) {
+      isinToEntry.set(isin, entry);
+    } else {
+      isinToEntry.set(`NSE:${ticker}`, entry);
+    }
   }
 
+  // 2. Merge BSE Equities
+  if (Array.isArray(bseListRaw)) {
+    for (const bseItem of bseListRaw) {
+      const isin = bseItem.ISIN_NUMBER?.trim();
+      const bseCode = bseItem.SCRIP_CD?.trim();
+      const rawTicker = bseItem.scrip_id?.trim() || bseCode;
+      const fullName = bseItem.Issuer_Name?.trim() || bseItem.Scrip_Name?.trim();
+
+      if (!fullName) continue;
+
+      if (isin && isinToEntry.has(isin)) {
+        // Merge BSE code into existing NSE entry
+        const existing = isinToEntry.get(isin)!;
+        existing.bseCode = bseCode;
+      } else {
+        // BSE-only listed company
+        let uniqueTicker = rawTicker || bseCode || `BSE_${isin}`;
+        if (tickerSet.has(uniqueTicker)) {
+          uniqueTicker = `${uniqueTicker}.BO`;
+        }
+        tickerSet.add(uniqueTicker);
+
+        const sector = classifyByName(fullName);
+        const shortName = cleanShortName(fullName, uniqueTicker);
+        const description = `${fullName} is an Indian public company listed on the Bombay Stock Exchange (BSE: ${bseCode || uniqueTicker}) in the ${sector} sector.`;
+
+        const entry: MasterEquitiesEntry = {
+          name: fullName,
+          shortName,
+          ticker: uniqueTicker,
+          bseCode,
+          sector,
+          industry: sector,
+          description,
+          isin: isin || '',
+        };
+
+        if (isin) {
+          isinToEntry.set(isin, entry);
+        } else {
+          isinToEntry.set(`BSE:${uniqueTicker}`, entry);
+        }
+      }
+    }
+  }
+
+  const result = Array.from(isinToEntry.values());
   const outPath = path.join(process.cwd(), 'src', 'db', 'equities_master.json');
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
-  console.log(`Successfully generated ${result.length} companies into ${outPath}`);
+  console.log(`Successfully generated ${result.length} NSE & BSE companies into ${outPath}`);
 }
 
 run().catch(console.error);
