@@ -165,25 +165,40 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
   }
 }
 
+// Helper to check if a publishedAt string is from the current day / last 24h
+export function isCurrentDay(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
+  const now = new Date();
+  const isSameCalendarDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  const isWithin24Hours = (now.getTime() - date.getTime()) <= 24 * 60 * 60 * 1000 && (now.getTime() - date.getTime()) >= -3600000;
+  return isSameCalendarDay || isWithin24Hours;
+}
+
 // Free Google News RSS fallback (always available without API keys)
 export async function fetchGoogleNewsRss(
   query: string,
   companyId?: number,
   sectorId?: number,
-  forceRefresh = false
+  forceRefresh = false,
+  todayOnly = false
 ): Promise<NewsArticleWithRelations[]> {
-  const cacheKey = `rss:${query}:${companyId || 0}:${sectorId || 0}`;
+  const finalQuery = todayOnly ? `${query} when:1d` : query;
+  const cacheKey = `rss:${finalQuery}:${companyId || 0}:${sectorId || 0}`;
   if (!forceRefresh && newsCache[cacheKey] && newsCache[cacheKey].expiresAt > Date.now()) {
     return newsCache[cacheKey].items;
   }
 
   try {
-    const encodedQuery = encodeURIComponent(query);
+    const encodedQuery = encodeURIComponent(finalQuery);
     const feed = await parser.parseURL(
       `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 25).map((item, index) => {
+    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 30).map((item, index) => {
       const title = (item.title || 'Market Update').replace(/ - [^-]+$/, '').trim();
       const rawSource = item.creator || (item as any).source?._ || item.source?.['$']?.['url'] || 'Financial Media';
       const source = typeof rawSource === 'string' ? rawSource : 'Market Media';
@@ -210,7 +225,7 @@ export async function fetchGoogleNewsRss(
     newsCache[cacheKey] = { items, expiresAt: Date.now() + CACHE_TTL };
     return items;
   } catch (err) {
-    console.error('RSS fetch error for query:', query, err);
+    console.error('RSS fetch error for query:', finalQuery, err);
     return [];
   }
 }
@@ -224,6 +239,7 @@ export interface GetNewsOptions {
   limit?: number;
   offset?: number;
   forceRefresh?: boolean;
+  todayOnly?: boolean;
 }
 
 export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
@@ -240,6 +256,7 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     limit = 20,
     offset = 0,
     forceRefresh = false,
+    todayOnly = false,
   } = options;
 
   let localArticles = db.getNewsArticlesWithRelations({
@@ -265,13 +282,13 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
         liveItems = await fetchGNewsKey(q, companyId);
       }
       if (liveItems.length === 0) {
-        liveItems = await fetchGoogleNewsRss(`${q} stock market India`, companyId, undefined, forceRefresh);
+        liveItems = await fetchGoogleNewsRss(`${q} stock market India`, companyId, undefined, forceRefresh, todayOnly);
       }
     }
   } else if (sectorId) {
     const sector = db.getSectors().find(s => s.id === sectorId);
     const sectorQuery = sector ? `${sector.name} stocks India market` : 'India stock market';
-    liveItems = await fetchGoogleNewsRss(sectorQuery, undefined, sectorId, forceRefresh);
+    liveItems = await fetchGoogleNewsRss(sectorQuery, undefined, sectorId, forceRefresh, todayOnly);
   } else {
     // General market feed or category-specific live news
     let marketQuery = 'Indian stock market business news Sensex Nifty BSE NSE';
@@ -283,7 +300,7 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
       else if (category === 'regulation') marketQuery = 'SEBI RBI penalty regulatory order stock market India';
       else if (category === 'analyst') marketQuery = 'stock target price rating upgrade brokerage India';
     }
-    liveItems = await fetchGoogleNewsRss(marketQuery, undefined, undefined, forceRefresh);
+    liveItems = await fetchGoogleNewsRss(marketQuery, undefined, undefined, forceRefresh, todayOnly);
   }
 
   if (liveItems.length > 0) {
@@ -314,7 +331,20 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     localArticles = [...freshNewItems, ...localArticles];
   }
 
-  // Sort by publishedAt desc
+  // Filter for today's articles if todayOnly is requested
+  if (todayOnly) {
+    const todayArticles = localArticles.filter(a => isCurrentDay(a.publishedAt));
+    if (todayArticles.length >= limit) {
+      localArticles = todayArticles;
+    } else if (todayArticles.length > 0) {
+      // Prioritize today's articles and fill with newest
+      const todaySet = new Set(todayArticles.map(a => a.id));
+      const olderArticles = localArticles.filter(a => !todaySet.has(a.id));
+      localArticles = [...todayArticles, ...olderArticles];
+    }
+  }
+
+  // Sort by publishedAt desc (newest first)
   localArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   const total = localArticles.length;

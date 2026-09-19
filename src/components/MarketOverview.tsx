@@ -13,7 +13,7 @@ export default function MarketOverview() {
   useEffect(() => {
     async function loadData() {
       try {
-        const newsRes = await fetch('/api/news?limit=3');
+        const newsRes = await fetch('/api/news?limit=3&todayOnly=true');
         if (newsRes.ok) {
           const newsJson = await newsRes.json();
           if (newsJson.success && Array.isArray(newsJson.data)) {
@@ -34,7 +34,10 @@ export default function MarketOverview() {
 
   if (loading) {
     return (
-      <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="glass-panel skeleton" style={{ width: 220, height: 24 }} />
+        </div>
         <div
           style={{
             display: 'grid',
@@ -50,10 +53,38 @@ export default function MarketOverview() {
     );
   }
 
+  if (headlines.length === 0) {
+    return null;
+  }
+
   return (
-    <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-
+    <div style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {/* Top 3 Headlines Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: 'var(--accent-primary)',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Today&apos;s Highlights
+          </span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Top Market Headlines
+          </span>
+        </div>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+        </span>
+      </div>
 
       {/* Top 3 Headlines Grid */}
       <div
