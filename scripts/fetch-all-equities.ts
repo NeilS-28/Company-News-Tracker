@@ -4,14 +4,6 @@
 import fs from 'fs';
 import path from 'path';
 
-function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 const baseSectorMap: Record<string, string> = {
   'Financial Services': 'Financial Services',
   'Automobile and Auto Components': 'Automobiles & Auto Components',

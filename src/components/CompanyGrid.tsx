@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CompanyWithQuote } from '@/types';
 import CompanyCard from './CompanyCard';
 
@@ -12,11 +12,12 @@ interface CompanyGridProps {
 export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
   const [companies, setCompanies] = useState<CompanyWithQuote[]>(initialCompanies || []);
   const [loading, setLoading] = useState(!initialCompanies);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sector, setSector] = useState('all');
   const [filter, setFilter] = useState<'all' | 'nifty50'>('all');
-  const [sort, setSort] = useState<'name' | 'ticker' | 'news'>('name');
+  const [sort, setSort] = useState<'name' | 'ticker'>('name');
   const [sectorsList, setSectorsList] = useState<Array<{ slug: string; name: string }>>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -27,24 +28,32 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (search === debouncedSearch) return;
+      setLoading(true);
       setDebouncedSearch(search);
       setPage(1);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, debouncedSearch]);
 
   // Reset page on filter or sort change
   const handleSectorChange = (s: string) => {
+    if (s === sector) return;
+    setLoading(true);
     setSector(s);
     setPage(1);
   };
 
   const handleFilterChange = (f: 'all' | 'nifty50') => {
+    if (f === filter) return;
+    setLoading(true);
     setFilter(f);
     setPage(1);
   };
 
-  const handleSortChange = (s: 'name' | 'ticker' | 'news') => {
+  const handleSortChange = (s: 'name' | 'ticker') => {
+    if (s === sort) return;
+    setLoading(true);
     setSort(s);
     setPage(1);
   };
@@ -63,7 +72,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
 
   // Fetch companies with pagination & filters
   useEffect(() => {
-    setLoading(true);
+    const controller = new AbortController();
     const params = new URLSearchParams();
     if (sector !== 'all') params.set('sector', sector);
     if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
@@ -72,20 +81,24 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
     params.set('page', page.toString());
     params.set('limit', '24');
 
-    fetch(`/api/companies?${params.toString()}`)
+    fetch(`/api/companies?${params.toString()}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((json) => {
-        if (json.success) {
+        if (!json.success) throw new Error('Unable to load companies. Try changing a filter or reloading.');
+        if (!controller.signal.aborted) {
+          setError(null);
           setCompanies(json.data);
           setTotalPages(json.totalPages || 1);
           setTotalCount(json.total || 0);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(err => { if (!controller.signal.aborted) setError(err.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [sector, debouncedSearch, filter, sort, page]);
 
   const goToPage = (newPage: number) => {
+    setLoading(true);
     setPage(newPage);
     if (containerRef.current) {
       containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -94,6 +107,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
 
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {error && <p role="alert" className="error-message">{error}</p>}
       {/* Controls Bar */}
       <div
         className="glass-panel"
@@ -202,7 +216,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
           <ArrowUpDown size={15} color="var(--text-muted)" />
           <select
             value={sort}
-            onChange={(e) => handleSortChange(e.target.value as 'name' | 'ticker' | 'news')}
+            onChange={(e) => handleSortChange(e.target.value as 'name' | 'ticker')}
             style={{
               background: 'var(--bg-input)',
               border: '1px solid var(--border-subtle)',
@@ -215,7 +229,6 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
           >
             <option value="name">Sort: Default (NIFTY 50 + A-Z)</option>
             <option value="ticker">Sort: Ticker (A-Z)</option>
-            <option value="news">Sort: Most News First</option>
           </select>
         </div>
       </div>
@@ -236,7 +249,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
             gap: '1rem',
           }}
         >
@@ -259,7 +272,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
             gap: '1rem',
           }}
         >

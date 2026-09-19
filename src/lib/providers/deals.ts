@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { db } from '@/db';
+import { articleId, isArticleUrl, deduplicateArticles } from '@/lib/news-quality';
 import { DealRadarItem, DealStatus } from '@/types';
 
 const parser = new Parser({
@@ -9,56 +9,12 @@ const parser = new Parser({
   timeout: 5000,
 });
 
-// Official Investor Relations (IR) Portals for NIFTY 50 companies
-export const COMPANY_IR_PORTALS: Record<string, { irUrl: string; pressReleaseUrl?: string }> = {
-  RELIANCE: { irUrl: 'https://www.ril.com/investor-relations', pressReleaseUrl: 'https://www.ril.com/media-releases' },
-  TCS: { irUrl: 'https://www.tcs.com/investor-relations', pressReleaseUrl: 'https://www.tcs.com/newsroom' },
-  HDFCBANK: { irUrl: 'https://www.hdfcbank.com/personal/about-us/investor-relations' },
-  INFY: { irUrl: 'https://www.infosys.com/investors.html', pressReleaseUrl: 'https://www.infosys.com/newsroom.html' },
-  ICICIBANK: { irUrl: 'https://www.icicibank.com/about-us/investor-relations' },
-  BHARTIARTL: { irUrl: 'https://www.airtel.in/about-bharti/equity' },
-  SBIN: { irUrl: 'https://sbi.co.in/web/investor-relations' },
-  LICI: { irUrl: 'https://licindia.in/investor-relations' },
-  ITC: { irUrl: 'https://www.itcportal.com/investor' },
-  HINDUNILVR: { irUrl: 'https://www.hul.co.in/investor-relations' },
-  LT: { irUrl: 'https://www.larsentoubro.com/corporate/investors' },
-  BAJFINANCE: { irUrl: 'https://www.bajajfinserv.in/investor-relations' },
-  HCLTECH: { irUrl: 'https://www.hcltech.com/investors' },
-  MARUTI: { irUrl: 'https://www.marutisuzuki.com/corporate/investors' },
-  SUNPHARMA: { irUrl: 'https://sunpharma.com/investors' },
-  TATAMOTORS: { irUrl: 'https://www.tatamotors.com/investors' },
-  KOTAKBANK: { irUrl: 'https://www.kotak.com/en/investor-relations.html' },
-  TITAN: { irUrl: 'https://www.titancompany.in/investors' },
-  ONGC: { irUrl: 'https://ongcindia.com/investors' },
-  ADANIENT: { irUrl: 'https://www.adanienterprises.com/investors' },
-  NTPC: { irUrl: 'https://ntpc.co.in/investors' },
-  AXISBANK: { irUrl: 'https://www.axisbank.com/shareholders-corner' },
-  TRENT: { irUrl: 'https://trentlimited.com/investor-relations' },
-  BEL: { irUrl: 'https://bel-india.in/investor-relations' },
-  ULTRACEMCO: { irUrl: 'https://www.ultratechcement.com/investors' },
-};
-
 export function classifyDealStatus(title: string, summary: string): {
   status: DealStatus;
   dealType: 'mna' | 'stake-sale' | 'joint-venture' | 'expansion' | 'clarification' | 'other';
-  confidence: 'high' | 'medium' | 'speculative';
+  confidence: 'speculative';
 } {
   const text = `${title} ${summary}`.toLowerCase();
-
-  // 1. SEBI Exchange Clarifications
-  if (
-    text.includes('clarification on') ||
-    text.includes('clarifies on') ||
-    text.includes('exchange query') ||
-    text.includes('media report clarification') ||
-    text.includes('lodr')
-  ) {
-    return {
-      status: 'sebi-clarification',
-      dealType: 'clarification',
-      confidence: 'high',
-    };
-  }
 
   // 2. Denied Rumours
   if (
@@ -69,9 +25,24 @@ export function classifyDealStatus(title: string, summary: string): {
     text.includes('no talks')
   ) {
     return {
-      status: 'denied',
+      status: 'reported-denial',
       dealType: 'clarification',
-      confidence: 'high',
+      confidence: 'speculative',
+    };
+  }
+
+  // 1. SEBI Exchange Clarifications
+  if (
+    text.includes('clarification on') ||
+    text.includes('clarifies on') ||
+    text.includes('exchange query') ||
+    text.includes('media report clarification') ||
+    text.includes('lodr')
+  ) {
+    return {
+      status: 'reported-clarification',
+      dealType: 'clarification',
+      confidence: 'speculative',
     };
   }
 
@@ -89,9 +60,9 @@ export function classifyDealStatus(title: string, summary: string): {
     if (text.includes('joint venture') || text.includes('jv')) dealType = 'joint-venture';
     else if (text.includes('stake')) dealType = 'stake-sale';
     return {
-      status: 'confirmed',
+      status: 'reported-agreement',
       dealType,
-      confidence: 'high',
+      confidence: 'speculative',
     };
   }
 
@@ -105,9 +76,9 @@ export function classifyDealStatus(title: string, summary: string): {
     text.includes('in advanced talks')
   ) {
     return {
-      status: 'in-talks',
+      status: 'reported-talks',
       dealType: text.includes('jv') ? 'joint-venture' : text.includes('stake') ? 'stake-sale' : 'mna',
-      confidence: 'medium',
+      confidence: 'speculative',
     };
   }
 
@@ -139,21 +110,23 @@ export async function fetchLiveDealsAndRumours(companyQuery?: string): Promise<D
       `https://news.google.com/rss/search?q=${encoded}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: DealRadarItem[] = (feed.items || []).slice(0, 15).map((item, idx) => {
-      const title = item.title || 'Corporate Deal Update';
-      const summary = item.contentSnippet || item.content || title;
+    const items: DealRadarItem[] = (feed.items || []).filter(item => isArticleUrl(item.link || '') && Number.isFinite(Date.parse(item.isoDate || item.pubDate || ''))).slice(0, 30).map((item) => {
+      const originalTitle = item.title || 'Corporate Deal Update';
+      const separator = originalTitle.lastIndexOf(' - ');
+      const title = separator < 0 ? originalTitle : originalTitle.slice(0, separator);
+      const summary = (item.contentSnippet || title).replace(/<[^>]*>/g, '');
       const { status, dealType, confidence } = classifyDealStatus(title, summary);
       const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
 
       return {
-        id: 400000 + idx + Math.floor(Math.random() * 10000),
+        id: articleId(item.link!),
         title,
         summary,
-        source: item.creator || item.source?.['$']?.['url'] || 'Deal Desk',
+        source: separator < 0 ? item.creator || 'Financial News' : originalTitle.slice(separator + 3),
         sourceUrl: item.link || '#',
         publishedAt,
         imageUrl: null,
-        sentiment: status === 'denied' ? 'negative' : status === 'confirmed' ? 'positive' : 'neutral',
+        sentiment: status === 'reported-denial' ? 'negative' : status === 'reported-agreement' ? 'positive' : 'neutral',
         category: 'deals-rumours',
         createdAt: publishedAt,
         dealStatus: status,
@@ -164,9 +137,10 @@ export async function fetchLiveDealsAndRumours(companyQuery?: string): Promise<D
       };
     });
 
-    dealCache[cacheKey] = { items, expiresAt: Date.now() + CACHE_TTL };
-    return items;
+    if (Object.keys(dealCache).length >= 200) delete dealCache[Object.keys(dealCache)[0]];
+    dealCache[cacheKey] = { items: deduplicateArticles(items), expiresAt: Date.now() + CACHE_TTL };
+    return dealCache[cacheKey].items;
   } catch {
-    return [];
+    throw new Error('Deal news is temporarily unavailable. Please retry.');
   }
 }

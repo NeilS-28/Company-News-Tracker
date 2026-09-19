@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Star, Layers, Building, TrendingUp, Activity } from 'lucide-react';
+import { Search, Activity } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import SearchDialog from './SearchDialog';
 
@@ -45,7 +45,7 @@ export default function Header() {
         }}
       >
         <div
-          className="container"
+          className="container header-top"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -85,12 +85,13 @@ export default function Header() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span style={{ color: 'var(--text-primary)' }}>Market</span>
               <span style={{ color: 'var(--accent-primary)' }}>Pulse</span>
-              <span className="live-indicator" style={{ marginLeft: 2 }} title="Live Market Feed Active" />
+
             </div>
           </Link>
 
           {/* Search Bar Trigger */}
           <button
+            className="header-search"
             onClick={() => setSearchOpen(true)}
             style={{
               display: 'flex',
@@ -131,7 +132,7 @@ export default function Header() {
 
           {/* Navigation Links & Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <nav className="header-nav" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Layers, Building2, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { Sector, CompanyWithQuote, NewsArticleWithRelations } from '@/types';
 import NewsCard from '@/components/NewsCard';
@@ -44,7 +44,7 @@ export default function SectorDetailPage({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-panel skeleton" style={{ height: 160 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+        <div className="research-grid">
           <div className="glass-panel skeleton" style={{ height: 400 }} />
           <div className="glass-panel skeleton" style={{ height: 400 }} />
         </div>
@@ -127,7 +127,7 @@ export default function SectorDetailPage({
       </div>
 
       {/* Main 2-Column: Left = News, Right = Sector Constituents */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '1.75rem' }}>
+      <div className="research-grid">
         {/* Left: Sector News Stream */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

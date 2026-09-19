@@ -1,34 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('marketpulse-theme') as 'dark' | 'light' | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setTheme('light');
-      document.documentElement.setAttribute('data-theme', 'light');
-    }
-  }, []);
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => 'dark');
+  useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('marketpulse-theme', next);
+    try { localStorage.setItem('marketpulse-theme', next); } catch { /* Storage unavailable. */ }
+    window.dispatchEvent(new Event('marketpulse-theme'));
     document.documentElement.setAttribute('data-theme', next);
   };
-
-  if (!mounted) {
-    return <div style={{ width: 36, height: 36 }} />;
-  }
 
   return (
     <button
@@ -52,4 +36,14 @@ export default function ThemeToggle() {
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
     </button>
   );
+}
+
+function readTheme(): 'dark' | 'light' {
+  try { const saved = localStorage.getItem('marketpulse-theme'); if (saved === 'dark' || saved === 'light') return saved; } catch { /* Use system preference. */ }
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+function subscribeTheme(callback: () => void) {
+  const media = window.matchMedia('(prefers-color-scheme: light)');
+  media.addEventListener('change', callback); window.addEventListener('storage', callback); window.addEventListener('marketpulse-theme', callback);
+  return () => { media.removeEventListener('change', callback); window.removeEventListener('storage', callback); window.removeEventListener('marketpulse-theme', callback); };
 }

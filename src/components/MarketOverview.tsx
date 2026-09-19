@@ -9,14 +9,18 @@ import { NewsArticleWithRelations } from '@/types';
 export default function MarketOverview() {
   const [headlines, setHeadlines] = useState<NewsArticleWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    let active = true;
     async function loadData() {
       try {
         const newsRes = await fetch(`/api/news?limit=3&todayOnly=true&refresh=true&_t=${Date.now()}`, {
           cache: 'no-store',
         });
-        if (newsRes.ok) {
+        if (!newsRes.ok) throw new Error('News unavailable');
+        if (newsRes.ok && active) {
+          setError(false);
           const newsJson = await newsRes.json();
           if (newsJson.success && Array.isArray(newsJson.data)) {
             setHeadlines(newsJson.data.slice(0, 3));
@@ -24,14 +28,15 @@ export default function MarketOverview() {
         }
       } catch (err) {
         console.error('Failed to load top headlines', err);
+        if (active) setError(true);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     loadData();
     const interval = setInterval(loadData, 60000); // 1 min poll
-    return () => clearInterval(interval);
+    return () => { active = false; clearInterval(interval); };
   }, []);
 
   if (loading) {
@@ -43,7 +48,7 @@ export default function MarketOverview() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
             gap: '1rem',
           }}
         >
@@ -54,6 +59,8 @@ export default function MarketOverview() {
       </div>
     );
   }
+
+  if (error) return <p role="status">Today’s highlights are temporarily unavailable. Use the news feed below to retry.</p>;
 
   if (headlines.length === 0) {
     return null;
@@ -84,7 +91,7 @@ export default function MarketOverview() {
           </span>
         </div>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+          {new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric' })}
         </span>
       </div>
 
@@ -92,7 +99,7 @@ export default function MarketOverview() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '1rem',
         }}
       >

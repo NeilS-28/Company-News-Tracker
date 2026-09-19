@@ -4,7 +4,8 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
   return classes.filter(Boolean).join(' ');
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount)) return '—';
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -12,14 +13,16 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function formatPoints(points: number): string {
+export function formatPoints(points: number | null | undefined): string {
+  if (points == null || !Number.isFinite(points)) return '—';
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(points);
 }
 
-export function formatPercent(percent: number, showSign = true): string {
+export function formatPercent(percent: number | null | undefined, showSign = true): string {
+  if (percent == null || !Number.isFinite(percent)) return '—';
   const sign = showSign && percent > 0 ? '+' : '';
   return `${sign}${percent.toFixed(2)}%`;
 }

@@ -6,19 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src scripts tests next.config.ts eslint.config.mjs",
     "db:seed": "npx tsx src/db/seed.ts",
-    "db:reset": "del data\\tracker.db 2>nul & npx tsx src/db/seed.ts"
+    "db:reset": "npm run db:seed",
+    "test": "node --conditions=react-server --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "date-fns": "^4.0.0",
     "lucide-react": "^1.45.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -26,5 +31,8 @@
     "eslint-config-next": "16.3.5",
     "tsx": "^4.0.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

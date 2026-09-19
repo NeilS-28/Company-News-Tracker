@@ -1,3 +1,4 @@
+import { articleId, isArticleUrl, deduplicateArticles, classifySentiment, isCurrentDay } from '@/lib/news-quality';
 import Parser from 'rss-parser';
 import { db } from '@/db';
 import { NewsArticleWithRelations, NewsCategory } from '@/types';
@@ -13,21 +14,11 @@ const parser = new Parser({
 const newsCache: Record<string, { items: NewsArticleWithRelations[]; expiresAt: number }> = {};
 const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 
-function classifySentiment(title: string): 'positive' | 'negative' | 'neutral' {
-  const titleLower = title.toLowerCase();
-  if (/surge|jump|gain|profit|rise|high|rally|bull|growth|record|soar|buy|upgrade|dividend|expansion|beat|outperform|boost/i.test(titleLower)) {
-    return 'positive';
-  } else if (/plunge|fall|drop|loss|decline|slump|bear|down|probe|fine|penalty|crash|sell|downgrade|scam|fraud|warning|cautious/i.test(titleLower)) {
-    return 'negative';
-  }
-  return 'neutral';
-}
-
 function classifyCategory(title: string): NewsCategory {
   const titleLower = title.toLowerCase();
-  if (/result|q1|q2|q3|q4|quarter|earnings|revenue|ebitda|profit|loss|pat/i.test(titleLower)) {
+  if (/\b(results?|q[1-4]|quarter(?:ly)?|earnings|revenue|ebitda|profits?|loss(?:es)?|pat)\b/i.test(titleLower)) {
     return 'results';
-  } else if (/ceo|cfo|appoint|resign|md|director|leadership|board|chairman/i.test(titleLower)) {
+  } else if (/\b(ceo|cfo|appoint\w*|resign\w*|md|directors?|leadership|board|chairman)\b/i.test(titleLower)) {
     return 'management';
   } else if (/dividend|split|bonus|buyback|rights issue|allotment/i.test(titleLower)) {
     return 'corporate-actions';
@@ -65,7 +56,7 @@ function tagEntities(
       const name = comp.name.toLowerCase();
       
       // Match ticker as word boundary or recognizable short name
-      const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'i');
+      const tickerRegex = new RegExp(`\\b${ticker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
       if (
         (shortName.length > 2 && text.includes(shortName)) ||
         (name.length > 3 && text.includes(name)) ||
@@ -101,16 +92,16 @@ async function fetchNewsApiKey(query: string, companyId?: number): Promise<NewsA
   try {
     const res = await fetch(
       `https://newsapi.org/v2/everything?q=${encodeURIComponent(query + ' India stock')}&sortBy=publishedAt&pageSize=15&apiKey=${apiKey}`,
-      { next: { revalidate: 180 } }
+      { cache: 'no-store', signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => {
+    return data.articles.filter((item: { url?: string; publishedAt?: string }) => isArticleUrl(item.url || '') && Number.isFinite(Date.parse(item.publishedAt || ''))).map((item: { title?: string; description?: string; source?: { name?: string }; url: string; publishedAt: string; urlToImage?: string; image?: string }) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
-        id: 200000 + index + Math.floor(Math.random() * 10000),
+        id: articleId(item.url),
         title: item.title || 'Market Update',
         summary: item.description || item.title || '',
         source: item.source?.name || 'Financial News',
@@ -137,16 +128,16 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
   try {
     const res = await fetch(
       `https://gnews.io/api/v4/search?q=${encodeURIComponent(query + ' stock India')}&lang=en&country=in&max=15&apikey=${apiKey}`,
-      { next: { revalidate: 180 } }
+      { cache: 'no-store', signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: any, index: number) => {
+    return data.articles.filter((item: { url?: string; publishedAt?: string }) => isArticleUrl(item.url || '') && Number.isFinite(Date.parse(item.publishedAt || ''))).map((item: { title?: string; description?: string; source?: { name?: string }; url: string; publishedAt: string; urlToImage?: string; image?: string }) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
-        id: 300000 + index + Math.floor(Math.random() * 10000),
+        id: articleId(item.url),
         title: item.title || 'Market Update',
         summary: item.description || item.title || '',
         source: item.source?.name || 'GNews Feed',
@@ -163,19 +154,6 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
   } catch {
     return [];
   }
-}
-
-// Helper to check if a publishedAt string is from the current day / last 24h
-export function isCurrentDay(dateStr: string): boolean {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return false;
-  const now = new Date();
-  const isSameCalendarDay =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
-  const isWithin24Hours = (now.getTime() - date.getTime()) <= 24 * 60 * 60 * 1000 && (now.getTime() - date.getTime()) >= -3600000;
-  return isSameCalendarDay || isWithin24Hours;
 }
 
 // Free Google News RSS fallback (always available without API keys)
@@ -198,21 +176,21 @@ export async function fetchGoogleNewsRss(
       `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 35).map((item, index) => {
+    const items: NewsArticleWithRelations[] = (feed.items || []).filter(item => isArticleUrl(item.link || '') && Number.isFinite(Date.parse(item.isoDate || item.pubDate || ''))).slice(0, 100).map((item) => {
       const lastDash = (item.title || '').lastIndexOf(' - ');
       let title = item.title || 'Market Update';
-      let source = (item as any).source?._ || item.creator || 'Financial News';
+      let source = item.creator || 'Financial News';
       if (lastDash !== -1) {
         title = (item.title || '').substring(0, lastDash).trim();
         source = (item.title || '').substring(lastDash + 3).trim();
       }
 
       const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
-      const summary = item.contentSnippet || item.content || title;
+      const summary = (item.contentSnippet || title).replace(/<[^>]*>/g, '');
       const { companies, sectors } = tagEntities(title, summary, companyId, sectorId);
 
       return {
-        id: 100000 + index + Math.floor(Math.random() * 100000),
+        id: articleId(item.link!),
         title,
         summary,
         source,
@@ -227,11 +205,12 @@ export async function fetchGoogleNewsRss(
       };
     });
 
+    if (Object.keys(newsCache).length >= 200) delete newsCache[Object.keys(newsCache)[0]];
     newsCache[cacheKey] = { items, expiresAt: Date.now() + CACHE_TTL };
     return items;
   } catch (err) {
-    console.error('RSS fetch error for query:', finalQuery, err);
-    return [];
+    console.error('RSS fetch failed', err instanceof Error ? err.message : 'Unknown error');
+    throw new Error('News source is temporarily unavailable. Please retry.');
   }
 }
 
@@ -263,16 +242,6 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     forceRefresh = false,
     todayOnly = false,
   } = options;
-
-  let localArticles = db.getNewsArticlesWithRelations({
-    companyId,
-    sectorId,
-    category: category === 'all' ? undefined : category,
-    sentiment,
-    search,
-    limit: 100,
-    offset: 0,
-  }) as NewsArticleWithRelations[];
 
   let liveItems: NewsArticleWithRelations[] = [];
 
@@ -308,48 +277,14 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     liveItems = await fetchGoogleNewsRss(marketQuery, undefined, undefined, forceRefresh, todayOnly);
   }
 
-  if (liveItems.length > 0) {
-    // Filter live items if category or sentiment is specified
-    let filteredLive = liveItems;
-    if (category && category !== 'all') {
-      filteredLive = filteredLive.filter(item => item.category === category);
-    }
-    if (sentiment) {
-      filteredLive = filteredLive.filter(item => item.sentiment === sentiment);
-    }
-    if (search && search.trim()) {
-      const sq = search.toLowerCase();
-      filteredLive = filteredLive.filter(
-        item => item.title.toLowerCase().includes(sq) || item.summary.toLowerCase().includes(sq)
-      );
-    }
-
-    const existingTitles = new Set(
-      localArticles.map(a => a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30))
-    );
-
-    const freshNewItems = filteredLive.filter(item => {
-      const norm = item.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
-      return !existingTitles.has(norm);
-    });
-
-    localArticles = [...freshNewItems, ...localArticles];
+  let articles = deduplicateArticles(liveItems);
+  if (category && category !== 'all') articles = articles.filter(item => item.category === category);
+  if (sentiment) articles = articles.filter(item => item.sentiment === sentiment);
+  if (search?.trim()) {
+    const query = search.trim().toLowerCase();
+    articles = articles.filter(item => `${item.title} ${item.summary}`.toLowerCase().includes(query));
   }
-
-  // Filter for today's articles strictly if todayOnly is requested
-  if (todayOnly) {
-    localArticles = localArticles.filter(a => isCurrentDay(a.publishedAt));
-  }
-
-  // Sort by publishedAt desc (newest first)
-  localArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-  const total = localArticles.length;
-  const paginated = localArticles.slice(offset, offset + limit);
-
-  return {
-    articles: paginated,
-    total,
-    lastUpdated: new Date().toISOString(),
-  };
+  if (todayOnly) articles = articles.filter(item => isCurrentDay(item.publishedAt));
+  articles.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  return { articles: articles.slice(offset, offset + limit), total: articles.length, lastUpdated: new Date().toISOString() };
 }

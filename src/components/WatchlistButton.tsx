@@ -1,116 +1,123 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Star } from 'lucide-react';
+import { useAccount } from './AccountProvider';
+import { authenticatedFetch } from '@/lib/supabase/browser';
 
-interface WatchlistButtonProps {
+export default function WatchlistButton({
+  companyId,
+  size = 16,
+  showLabel = false,
+}: {
   companyId: number;
   size?: number;
   showLabel?: boolean;
-}
-
-export default function WatchlistButton({ companyId, size = 16, showLabel = false }: WatchlistButtonProps) {
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Check local storage / watchlist state
-    const saved = localStorage.getItem('marketpulse-watchlist');
-    if (saved) {
-      try {
-        const ids: number[] = JSON.parse(saved);
-        setIsInWatchlist(ids.includes(companyId));
-      } catch {
-        // Ignore
-      }
-    }
-  }, [companyId]);
-
-  const toggleWatchlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    setLoading(true);
-    const saved = localStorage.getItem('marketpulse-watchlist');
-    let ids: number[] = [];
-    if (saved) {
-      try {
-        ids = JSON.parse(saved);
-      } catch {
-        ids = [];
-      }
-    }
-
-    const exists = ids.includes(companyId);
-    let nextIds: number[];
-
-    if (exists) {
-      nextIds = ids.filter(id => id !== companyId);
-      setIsInWatchlist(false);
-    } else {
-      nextIds = [...ids, companyId];
-      setIsInWatchlist(true);
-    }
-
-    localStorage.setItem('marketpulse-watchlist', JSON.stringify(nextIds));
-
-    // Also sync with server watchlist #1 in background
+}) {
+  const {
+    user,
+    ready,
+    configured,
+    lists,
+    error: listError,
+    refreshLists,
+  } = useAccount();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const saved = lists.some((list) =>
+    list.companies.some((company) => company.id === companyId),
+  );
+  async function toggle(id: number, exists: boolean) {
+    setBusy(true);
+    setError(null);
     try {
-      await fetch('/api/watchlists/1', {
+      await authenticatedFetch(`/api/watchlists/${id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: exists ? 'remove' : 'add',
-          companyId,
-        }),
+        body: JSON.stringify({ companyId, action: exists ? 'remove' : 'add' }),
       });
-    } catch {
-      // Offline / server fallback ok
+      await refreshLists();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to update watchlist.',
+      );
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  };
-
+  }
   return (
-    <button
-      onClick={toggleWatchlist}
-      disabled={loading}
-      title={isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.35rem',
-        padding: showLabel ? '0.35rem 0.65rem' : '0.35rem',
-        borderRadius: 'var(--radius-sm)',
-        background: isInWatchlist ? 'rgba(234, 179, 8, 0.12)' : 'transparent',
-        border: `1px solid ${isInWatchlist ? 'rgba(234, 179, 8, 0.3)' : 'transparent'}`,
-        color: isInWatchlist ? '#eab308' : 'var(--text-muted)',
-        cursor: 'pointer',
-        transition: 'all 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        if (!isInWatchlist) {
-          e.currentTarget.style.color = '#eab308';
-          e.currentTarget.style.background = 'rgba(234, 179, 8, 0.08)';
+    <>
+      <button
+        type="button"
+        disabled={!ready || !configured}
+        aria-label={saved ? 'Manage saved company' : 'Add company to watchlist'}
+        title={
+          !configured ? 'Watchlists are not available yet' : 'Choose watchlists'
         }
-      }}
-      onMouseLeave={(e) => {
-        if (!isInWatchlist) {
-          e.currentTarget.style.color = 'var(--text-muted)';
-          e.currentTarget.style.background = 'transparent';
-        }
-      }}
-    >
-      <Star
-        size={size}
-        fill={isInWatchlist ? '#eab308' : 'none'}
-        stroke={isInWatchlist ? '#eab308' : 'currentColor'}
-      />
-      {showLabel && (
-        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
-          {isInWatchlist ? 'Watchlisted' : 'Watchlist'}
-        </span>
-      )}
-    </button>
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!user) {
+            router.push('/watchlists');
+            return;
+          }
+          dialog.current?.showModal();
+        }}
+        className="watchlist-star"
+        style={{ color: saved ? '#eab308' : 'var(--text-secondary)' }}
+      >
+        <Star size={size} fill={saved ? 'currentColor' : 'none'} />
+        {showLabel && (saved ? 'Saved' : 'Watchlist')}
+      </button>
+      <dialog
+        ref={dialog}
+        aria-label="Choose watchlists"
+        className="watchlist-dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2>Save to watchlists</h2>
+        {(error || listError) && <p role="alert">{error || listError}</p>}
+        {lists.length === 0 ? (
+          <p>Create your first watchlist to save this company.</p>
+        ) : (
+          lists.map((list) => {
+            const exists = list.companies.some(
+              (company) => company.id === companyId,
+            );
+            return (
+              <label className="watchlist-choice" key={list.id}>
+                <input
+                  type="checkbox"
+                  checked={exists}
+                  disabled={busy}
+                  onChange={() => void toggle(list.id, exists)}
+                />
+                {list.name}
+              </label>
+            );
+          })
+        )}
+        <div className="action-row">
+          <button
+            type="button"
+            className="action-button"
+            onClick={() => {
+              dialog.current?.close();
+              router.push('/watchlists');
+            }}
+          >
+            Manage lists
+          </button>
+          <button
+            type="button"
+            className="action-button"
+            onClick={() => dialog.current?.close()}
+          >
+            Done
+          </button>
+        </div>
+      </dialog>
+    </>
   );
 }

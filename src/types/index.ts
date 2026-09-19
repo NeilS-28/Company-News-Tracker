@@ -27,7 +27,7 @@ export interface Sector {
 }
 
 export interface NewsArticle {
-  id: number;
+  id: string;
   title: string;
   summary: string;
   source: string;
@@ -55,10 +55,10 @@ export type NewsCategory =
 
 export type DealStatus =
   | 'unverified-rumour'
-  | 'in-talks'
-  | 'confirmed'
-  | 'denied'
-  | 'sebi-clarification';
+  | 'reported-talks'
+  | 'reported-agreement'
+  | 'reported-denial'
+  | 'reported-clarification';
 
 export interface DealRadarItem extends NewsArticleWithRelations {
   dealStatus: DealStatus;
@@ -101,14 +101,17 @@ export interface MarketQuote {
   symbol: string;
   name: string;
   price: number;
-  change: number;
-  changePercent: number;
-  previousClose: number;
-  open: number;
-  dayHigh: number;
-  dayLow: number;
-  volume: number;
+  change: number | null;
+  changePercent: number | null;
+  previousClose: number | null;
+  open: number | null;
+  dayHigh: number | null;
+  dayLow: number | null;
+  volume: number | null;
   timestamp: string;
+  fetchedAt: string;
+  source: 'Yahoo Finance' | 'Finnhub';
+  status: 'provider' | 'stale';
 }
 
 export interface CompanyWithQuote extends Company {
@@ -182,6 +185,6 @@ export type Theme = 'light' | 'dark';
 
 export interface UserPreferences {
   theme: Theme;
-  readArticles: Set<number>;
-  bookmarkedArticles: Set<number>;
+  readArticles: Set<string>;
+  bookmarkedArticles: Set<string>;
 }

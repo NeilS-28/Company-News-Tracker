@@ -1,5 +1,6 @@
+import { COMPANY_IR_PORTALS } from '@/lib/ir-portals';
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchLiveDealsAndRumours, classifyDealStatus, COMPANY_IR_PORTALS } from '@/lib/providers/deals';
+import { fetchLiveDealsAndRumours } from '@/lib/providers/deals';
 import { db } from '@/db';
 import { DealRadarItem, DealStatus } from '@/types';
 
@@ -9,31 +10,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as DealStatus | 'all' | null;
     const companyId = searchParams.get('companyId') ? Number(searchParams.get('companyId')) : undefined;
     const search = searchParams.get('search')?.toLowerCase();
-
-    // 1. Get database articles that relate to M&A, corporate actions, or deals
-    let dbArticles = db.getNewsArticlesWithRelations({
-      companyId,
-      limit: 50,
-    });
-
-    // Filter to articles that match deal/rumour terms or mna category
-    const dealKeywords = ['deal', 'acquire', 'acquisition', 'merger', 'stake', 'in talks', 'joint venture', 'jv', 'buyout', 'bid', 'clarification', 'denies', 'amalgamation'];
-    const filteredDbArticles = dbArticles.filter(a => {
-      const text = `${a.title} ${a.summary}`.toLowerCase();
-      return a.category === 'mna' || a.category === 'deals-rumours' || dealKeywords.some(k => text.includes(k));
-    });
-
-    const transformedDbDeals: DealRadarItem[] = filteredDbArticles.map(a => {
-      const { status: classifiedStatus, dealType, confidence } = classifyDealStatus(a.title, a.summary);
-      return {
-        ...a,
-        sentiment: (a.sentiment as 'positive' | 'negative' | 'neutral' | null) ?? 'neutral',
-        category: 'deals-rumours' as const,
-        dealStatus: classifiedStatus,
-        dealType,
-        sourceConfidence: confidence,
-      };
-    });
 
     // 2. Fetch live real-time deal scoops
     let companyTicker: string | undefined;
@@ -48,8 +24,8 @@ export async function GET(request: NextRequest) {
     const seenTitles = new Set<string>();
     let allDeals: DealRadarItem[] = [];
 
-    for (const d of [...liveDeals, ...transformedDbDeals]) {
-      const key = d.title.toLowerCase().slice(0, 40);
+    for (const d of liveDeals) {
+      const key = d.id;
       if (!seenTitles.has(key)) {
         seenTitles.add(key);
         allDeals.push(d);

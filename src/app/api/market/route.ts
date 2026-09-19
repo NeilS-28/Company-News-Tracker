@@ -14,19 +14,20 @@ export async function GET() {
         const q = await getMarketQuote(s);
         const comp = companies.find(c => c.ticker === s);
         return {
+          quote: q,
           symbol: s,
           name: comp?.shortName || s,
           slug: comp?.slug || s.toLowerCase(),
-          price: q.price,
-          change: q.change,
-          changePercent: q.changePercent,
+          price: q?.price ?? null,
+          change: q?.change ?? null,
+          changePercent: q?.changePercent ?? null,
         };
       })
     );
 
-    const sortedByGain = [...quotes].sort((a, b) => b.changePercent - a.changePercent);
-    const gainers = sortedByGain.filter(q => q.changePercent > 0).slice(0, 5);
-    const losers = [...sortedByGain].reverse().filter(q => q.changePercent < 0).slice(0, 5);
+    const sortedByGain = [...quotes].sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0));
+    const gainers = sortedByGain.filter(q => q.changePercent !== null && q.changePercent > 0).slice(0, 5);
+    const losers = [...sortedByGain].reverse().filter(q => q.changePercent !== null && q.changePercent < 0).slice(0, 5);
 
     return NextResponse.json({
       success: true,
@@ -36,6 +37,8 @@ export async function GET() {
         gainers,
         losers,
         updatedAt: overview.updatedAt,
+        moversScope: 'Selected companies only; not all NSE/BSE securities',
+        breadthStatus: 'unavailable',
       },
     });
   } catch (err: unknown) {

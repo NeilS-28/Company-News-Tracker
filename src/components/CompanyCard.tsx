@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import QuoteStatus from './QuoteStatus';
 import { TrendingUp, TrendingDown, Newspaper, ChevronRight } from 'lucide-react';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { CompanyWithQuote } from '@/types';
@@ -135,6 +136,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
               {isPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
               <span>{formatPercent(quote.changePercent)}</span>
             </div>
+            <QuoteStatus quote={quote} />
           </div>
         ) : (
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Quote unavailable</div>
@@ -156,7 +158,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           <Newspaper size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {company.latestHeadline || `${company.recentNewsCount ?? 0} news items`}
+            {company.latestHeadline || 'Read company news'}
           </span>
         </div>
 

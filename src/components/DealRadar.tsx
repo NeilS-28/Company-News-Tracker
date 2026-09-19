@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Radar, ExternalLink, ShieldAlert, CheckCircle2, XCircle, AlertCircle, HelpCircle, FileText, Globe } from 'lucide-react';
+import { Radar, ExternalLink, CheckCircle2, XCircle, AlertCircle, HelpCircle, FileText, Globe } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { DealRadarItem, DealStatus } from '@/types';
 
@@ -15,34 +15,38 @@ interface DealRadarProps {
 export default function DealRadar({ companyId, companyName, irUrl }: DealRadarProps) {
   const [deals, setDeals] = useState<DealRadarItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<DealStatus | 'all'>('all');
-  const [search, setSearch] = useState('');
   const [companyIR, setCompanyIR] = useState<{ irUrl: string; pressReleaseUrl?: string } | null>(null);
 
-  const loadDeals = async () => {
-    setLoading(true);
+  const requestRef = useRef<AbortController | null>(null);
+  const loadDeals = useCallback(async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController(); requestRef.current = controller;
     try {
       const params = new URLSearchParams();
       if (filter !== 'all') params.set('status', filter);
       if (companyId) params.set('companyId', String(companyId));
-      if (search.trim()) params.set('search', search.trim());
 
-      const res = await fetch(`/api/deals?${params.toString()}`);
+      const res = await fetch(`/api/deals?${params.toString()}`, { signal: controller.signal });
       const json = await res.json();
-      if (json.success) {
+      if (!res.ok || !json.success) throw new Error('Deal news is temporarily unavailable. Please retry.');
+      if (json.success && !controller.signal.aborted) {
+        setError(null);
         setDeals(json.data);
         if (json.irInfo) setCompanyIR(json.irInfo);
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Unable to load deals.');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  };
+  }, [filter, companyId]);
 
   useEffect(() => {
-    loadDeals();
-  }, [filter, companyId]);
+    const timer = setTimeout(() => void loadDeals(), 250);
+    return () => { clearTimeout(timer); requestRef.current?.abort(); };
+  }, [loadDeals]);
 
   const getStatusBadge = (status: DealStatus) => {
     switch (status) {
@@ -54,33 +58,33 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
           text: '#eab308',
           icon: HelpCircle,
         };
-      case 'in-talks':
+      case 'reported-talks':
         return {
-          label: 'In Active Talks',
+          label: 'Reported Talks',
           bg: 'rgba(56, 189, 248, 0.12)',
           border: 'rgba(56, 189, 248, 0.3)',
           text: '#38bdf8',
           icon: AlertCircle,
         };
-      case 'sebi-clarification':
+      case 'reported-clarification':
         return {
-          label: 'SEBI Clarification Filed',
+          label: 'Reported Clarification',
           bg: 'rgba(168, 85, 247, 0.12)',
           border: 'rgba(168, 85, 247, 0.3)',
           text: '#c084fc',
           icon: FileText,
         };
-      case 'confirmed':
+      case 'reported-agreement':
         return {
-          label: 'Confirmed / Signed',
+          label: 'Reported Agreement',
           bg: 'rgba(16, 185, 129, 0.12)',
           border: 'rgba(16, 185, 129, 0.3)',
           text: '#10b981',
           icon: CheckCircle2,
         };
-      case 'denied':
+      case 'reported-denial':
         return {
-          label: 'Denied by Company',
+          label: 'Reported Denial',
           bg: 'rgba(239, 68, 68, 0.12)',
           border: 'rgba(239, 68, 68, 0.3)',
           text: '#ef4444',
@@ -92,14 +96,15 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
   const statusFilters = [
     { id: 'all', label: 'All Buzz & Deals' },
     { id: 'unverified-rumour', label: '🟡 Rumours' },
-    { id: 'in-talks', label: '🔵 In Talks' },
-    { id: 'sebi-clarification', label: '🟣 SEBI Clarifications' },
-    { id: 'confirmed', label: '🟢 Confirmed Pacts' },
-    { id: 'denied', label: '🔴 Denied' },
+    { id: 'reported-talks', label: '🔵 In Talks' },
+    { id: 'reported-clarification', label: '🟣 Reported Clarifications' },
+    { id: 'reported-agreement', label: '🟢 Reported Agreements' },
+    { id: 'reported-denial', label: '🔴 Denied' },
   ] as const;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {error && <p role="alert" className="error-message">{error} <button className="action-button" onClick={() => void loadDeals()}>Retry</button></p>}
       {/* Header Banner */}
       <div
         className="glass-panel"
@@ -134,7 +139,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
               {companyName && <span style={{ color: 'var(--accent-primary)' }}>• {companyName}</span>}
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Tracking M&A scoops, deal-desk whispers, joint ventures, and official SEBI LODR rumour clarifications
+              Automated labels from news headlines, not independently verified filings. Open the source and check official company disclosures.
             </p>
           </div>
         </div>
@@ -181,7 +186,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
           return (
             <button
               key={tab.id}
-              onClick={() => setFilter(tab.id as DealStatus | 'all')}
+              onClick={() => { if (filter !== tab.id) { setLoading(true); setDeals([]); setFilter(tab.id as DealStatus | 'all'); } }}
               style={{
                 whiteSpace: 'nowrap',
                 padding: '0.35rem 0.85rem',
@@ -268,11 +273,11 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
                         fontSize: '0.7rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.04em',
-                        color: item.sourceConfidence === 'high' ? 'var(--bullish)' : 'var(--text-muted)',
+                        color: 'var(--text-muted)',
                         fontWeight: 600,
                       }}
                     >
-                      {item.sourceConfidence} verification
+                      Automated · unverified
                     </span>
                   )}
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Layers, ChevronRight, Building2 } from 'lucide-react';
+import { Layers, ChevronRight } from 'lucide-react';
 import type { SectorWithCompanies } from '@/types';
 
 export default function SectorsPage() {
@@ -48,13 +48,13 @@ export default function SectorsPage() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '1rem' }}>
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="glass-panel skeleton" style={{ height: 160 }} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '1.25rem' }}>
           {sectors.map((sector) => (
             <Link
               key={sector.id}

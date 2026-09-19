@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import AccountProvider from '@/components/AccountProvider';
 import Header from '@/components/Header';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 
@@ -22,10 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <AccountProvider>
         <Header />
         <main className="container" style={{ paddingTop: '1.5rem', paddingBottom: '4rem', minHeight: 'calc(100vh - 140px)' }}>
           {children}
         </main>
+        </AccountProvider>
         <footer
           style={{
             borderTop: '1px solid var(--border-subtle)',
@@ -43,7 +46,7 @@ export default function RootLayout({
               <span>Indian Stock Market News & Research</span>
             </div>
             <p style={{ maxWidth: 600 }}>
-              Market data & news aggregated for research and educational purposes only. Not financial advice. NSE & BSE listed equities data current.
+              Market data & news aggregated for research and educational purposes only. Not financial advice. Quotes may be delayed. Check the source timestamp and original reporting.
             </p>
           </div>
         </footer>

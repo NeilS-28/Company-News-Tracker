@@ -39,12 +39,6 @@ export async function GET(request: NextRequest) {
     // Sorting
     if (sortBy === 'ticker') {
       companies.sort((a, b) => a.ticker.localeCompare(b.ticker));
-    } else if (sortBy === 'news') {
-      companies.sort((a, b) => {
-        const countA = db.getRecentNewsCountForCompany(a.id);
-        const countB = db.getRecentNewsCountForCompany(b.id);
-        return countB - countA;
-      });
     } else {
       // Default: prioritize Nifty 50 constituents first, then alphabetical by name
       companies.sort((a, b) => {
@@ -68,14 +62,10 @@ export async function GET(request: NextRequest) {
           // Keep null if error
         }
 
-        const recentNewsCount = db.getRecentNewsCountForCompany(company.id);
-        const latestHeadline = db.getLatestHeadlineForCompany(company.id);
 
         return {
           ...company,
           quote,
-          recentNewsCount,
-          latestHeadline,
         };
       })
     );

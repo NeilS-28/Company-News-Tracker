@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Bookmark, Check, Building2, Layers } from 'lucide-react';
+import { ExternalLink, Bookmark, Building2, Layers } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
 
@@ -11,29 +11,18 @@ interface NewsCardProps {
 }
 
 export default function NewsCard({ article }: NewsCardProps) {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isRead, setIsRead] = useState(false);
-
-  useEffect(() => {
-    try {
-      const bmarks = JSON.parse(localStorage.getItem('mp-bookmarks') || '[]');
-      setIsBookmarked(bmarks.includes(article.id));
-      const reads = JSON.parse(localStorage.getItem('mp-reads') || '[]');
-      setIsRead(reads.includes(article.id));
-    } catch {
-      // Ignore
-    }
-  }, [article.id]);
+  const isBookmarked = useSyncExternalStore(subscribePreferences, () => includesArticle('mp-bookmarks', article.id), () => false);
+  const isRead = useSyncExternalStore(subscribePreferences, () => includesArticle('mp-reads', article.id), () => false);
 
   const toggleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      const bmarks: number[] = JSON.parse(localStorage.getItem('mp-bookmarks') || '[]');
+      const bmarks: string[] = JSON.parse(localStorage.getItem('mp-bookmarks') || '[]');
       const next = bmarks.includes(article.id)
         ? bmarks.filter(id => id !== article.id)
         : [...bmarks, article.id];
-      setIsBookmarked(!isBookmarked);
       localStorage.setItem('mp-bookmarks', JSON.stringify(next));
+      window.dispatchEvent(new Event('marketpulse-preferences'));
     } catch {
       // Ignore
     }
@@ -41,11 +30,11 @@ export default function NewsCard({ article }: NewsCardProps) {
 
   const markAsRead = () => {
     try {
-      const reads: number[] = JSON.parse(localStorage.getItem('mp-reads') || '[]');
+      const reads: string[] = JSON.parse(localStorage.getItem('mp-reads') || '[]');
       if (!reads.includes(article.id)) {
         reads.push(article.id);
-        setIsRead(true);
         localStorage.setItem('mp-reads', JSON.stringify(reads));
+        window.dispatchEvent(new Event('marketpulse-preferences'));
       }
     } catch {
       // Ignore
@@ -210,4 +199,12 @@ export default function NewsCard({ article }: NewsCardProps) {
       </div>
     </article>
   );
+}
+
+function subscribePreferences(callback: () => void) {
+  window.addEventListener('storage', callback); window.addEventListener('marketpulse-preferences', callback);
+  return () => { window.removeEventListener('storage', callback); window.removeEventListener('marketpulse-preferences', callback); };
+}
+function includesArticle(key: string, id: string) {
+  try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) && value.includes(id); } catch { return false; }
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import MarketOverview from '@/components/MarketOverview';
 import NewsFeed from '@/components/NewsFeed';
 import CompanyGrid from '@/components/CompanyGrid';
-import { Newspaper, Building2, Layers, Sparkles, TrendingUp, Star, Radar } from 'lucide-react';
+import { Newspaper, Building2, Layers, Star, Radar } from 'lucide-react';
 import DealRadar from '@/components/DealRadar';
 
 export default function HomePage() {
@@ -15,7 +15,7 @@ export default function HomePage() {
     { id: 'news', label: 'News Feed', icon: Newspaper },
     { id: 'deals', label: 'Deal Radar & Rumours', icon: Radar },
     { id: 'companies', label: 'Companies Directory', icon: Building2 },
-    { id: 'sectors', label: 'Sectors & Heatmap', icon: Layers },
+    { id: 'sectors', label: 'Sectors', icon: Layers },
   ] as const;
 
   return (
@@ -35,7 +35,7 @@ export default function HomePage() {
           gap: '1rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -128,7 +128,7 @@ export default function HomePage() {
                 </Link>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Track real-time valuations, recent headlines, and corporate actions across Indian listed equities.
+                Track reported quotes, recent headlines, and corporate actions across Indian listed equities.
               </p>
               <CompanyGrid />
             </div>
@@ -167,7 +167,7 @@ function SectorsTabOverview() {
   const [sectors, setSectors] = useState<Array<{ id: number; name: string; slug: string; description: string; companyCount: number }>>([]);
   const [loading, setLoading] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
     fetch('/api/sectors')
       .then(res => res.json())
       .then(json => {
@@ -175,11 +175,11 @@ function SectorsTabOverview() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  });
+  }, []);
 
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="glass-panel skeleton" style={{ height: 140 }} />
         ))}
@@ -198,7 +198,7 @@ function SectorsTabOverview() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
         {sectors.map((sector) => (
           <Link
             key={sector.id}
