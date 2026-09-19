@@ -80,9 +80,13 @@ export interface WatchlistCompanyRow {
 const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
 
 function ensureDataDir() {
-  const dataDir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  try {
+    const dataDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+  } catch {
+    // Read-only environment on serverless hosts like Vercel
   }
 }
 
@@ -103,13 +107,20 @@ class JsonDatabase {
 
   private load(): DbSchema {
     if (this.data) return this.data;
-    ensureDataDir();
-    if (fs.existsSync(DB_PATH)) {
-      const raw = fs.readFileSync(DB_PATH, 'utf-8');
-      this.data = JSON.parse(raw) as DbSchema;
-    } else {
-      this.data = getEmptyDb();
+    try {
+      ensureDataDir();
+      if (fs.existsSync(DB_PATH)) {
+        const raw = fs.readFileSync(DB_PATH, 'utf-8');
+        this.data = JSON.parse(raw) as DbSchema;
+        if (this.data && Array.isArray(this.data.companies) && this.data.companies.length > 0) {
+          return this.data;
+        }
+      }
+    } catch {
+      // Ignore read errors on serverless
     }
+
+    this.data = getEmptyDb();
     return this.data;
   }
 
