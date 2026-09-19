@@ -199,38 +199,6 @@ class JsonDatabase {
     if (!Array.isArray(this.data.users)) {
       this.data.users = [];
     }
-    // Pre-seed demo user if not present
-    if (!this.data.users.some(u => u.email === 'demo@marketpulse.in')) {
-      this.data.users.push({
-        id: 'usr_demo_101',
-        name: 'Demo Investor',
-        email: 'demo@marketpulse.in',
-        passwordHash: '811ac87a39e76383121680924484daf1a539214e03d4bec3249c55b794600b3b7f7483769e750217f3ad85fed9e143d55300471c62f815c31dec63e248e08691',
-        salt: 'marketpulse_demo_salt_2026',
-        createdAt: '2026-01-01T00:00:00.000Z',
-      });
-      // Ensure demo user has a personalized portfolio watchlist
-      if (!this.data.watchlists.some(w => w.userId === 'usr_demo_101')) {
-        const wlId = (this.data.watchlists.length > 0 ? Math.max(...this.data.watchlists.map(w => w.id)) : 0) + 1;
-        this.data.watchlists.push({
-          id: wlId,
-          userId: 'usr_demo_101',
-          name: 'Tech & Growth Conviction',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-        // Seed first 3 companies in demo watchlist
-        [1, 2, 3].forEach((cid, idx) => {
-          const maxId = (this.data!.watchlistCompanies.length > 0 ? Math.max(...this.data!.watchlistCompanies.map(wc => wc.id)) : 0) + 1;
-          this.data!.watchlistCompanies.push({
-            id: maxId,
-            watchlistId: wlId,
-            companyId: cid,
-            position: idx,
-          });
-        });
-      }
-    }
   }
 
   private save() {

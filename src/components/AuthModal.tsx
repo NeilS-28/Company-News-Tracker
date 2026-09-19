@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Mail, User as UserIcon, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { X, Lock, Mail, User as UserIcon, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AuthModal() {
@@ -57,12 +57,6 @@ export default function AuthModal() {
     setSubmitting(false);
   };
 
-  const fillDemoCredentials = () => {
-    setMode('login');
-    setEmail('demo@marketpulse.in');
-    setPassword('Demo@12345');
-    setError(null);
-  };
 
   return (
     <div
@@ -194,45 +188,6 @@ export default function AuthModal() {
 
         {/* Body */}
         <div style={{ padding: '1.5rem' }}>
-          {/* Quick Demo Button */}
-          <div
-            style={{
-              marginBottom: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(2, 132, 199, 0.05) 100%)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '0.75rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles size={16} color="var(--accent-primary)" />
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-                <span style={{ fontWeight: 600 }}>Testing the app?</span> Use instant demo account
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={fillDemoCredentials}
-              style={{
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: '#fff',
-                background: 'var(--accent-primary)',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Fill Demo
-            </button>
-          </div>
-
           {error && (
             <div
               style={{
