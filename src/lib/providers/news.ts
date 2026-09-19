@@ -198,10 +198,15 @@ export async function fetchGoogleNewsRss(
       `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 30).map((item, index) => {
-      const title = (item.title || 'Market Update').replace(/ - [^-]+$/, '').trim();
-      const rawSource = item.creator || (item as any).source?._ || item.source?.['$']?.['url'] || 'Financial Media';
-      const source = typeof rawSource === 'string' ? rawSource : 'Market Media';
+    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 35).map((item, index) => {
+      const lastDash = (item.title || '').lastIndexOf(' - ');
+      let title = item.title || 'Market Update';
+      let source = (item as any).source?._ || item.creator || 'Financial News';
+      if (lastDash !== -1) {
+        title = (item.title || '').substring(0, lastDash).trim();
+        source = (item.title || '').substring(lastDash + 3).trim();
+      }
+
       const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
       const summary = item.contentSnippet || item.content || title;
       const { companies, sectors } = tagEntities(title, summary, companyId, sectorId);
@@ -331,17 +336,9 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     localArticles = [...freshNewItems, ...localArticles];
   }
 
-  // Filter for today's articles if todayOnly is requested
+  // Filter for today's articles strictly if todayOnly is requested
   if (todayOnly) {
-    const todayArticles = localArticles.filter(a => isCurrentDay(a.publishedAt));
-    if (todayArticles.length >= limit) {
-      localArticles = todayArticles;
-    } else if (todayArticles.length > 0) {
-      // Prioritize today's articles and fill with newest
-      const todaySet = new Set(todayArticles.map(a => a.id));
-      const olderArticles = localArticles.filter(a => !todaySet.has(a.id));
-      localArticles = [...todayArticles, ...olderArticles];
-    }
+    localArticles = localArticles.filter(a => isCurrentDay(a.publishedAt));
   }
 
   // Sort by publishedAt desc (newest first)

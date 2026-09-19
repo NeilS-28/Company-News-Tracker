@@ -13,7 +13,9 @@ export default function MarketOverview() {
   useEffect(() => {
     async function loadData() {
       try {
-        const newsRes = await fetch('/api/news?limit=3&todayOnly=true');
+        const newsRes = await fetch(`/api/news?limit=3&todayOnly=true&refresh=true&_t=${Date.now()}`, {
+          cache: 'no-store',
+        });
         if (newsRes.ok) {
           const newsJson = await newsRes.json();
           if (newsJson.success && Array.isArray(newsJson.data)) {
