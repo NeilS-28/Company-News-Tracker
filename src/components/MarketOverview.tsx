@@ -2,62 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Activity, Building2 } from 'lucide-react';
-import { formatPercent, formatDate } from '@/lib/utils';
+import { ExternalLink, Building2 } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 import { NewsArticleWithRelations } from '@/types';
-
-interface MarketMoversData {
-  gainers: Array<{
-    symbol: string;
-    name: string;
-    slug: string;
-    price: number;
-    change: number;
-    changePercent: number;
-  }>;
-  losers: Array<{
-    symbol: string;
-    name: string;
-    slug: string;
-    price: number;
-    change: number;
-    changePercent: number;
-  }>;
-  updatedAt?: string;
-}
 
 export default function MarketOverview() {
   const [headlines, setHeadlines] = useState<NewsArticleWithRelations[]>([]);
-  const [movers, setMovers] = useState<MarketMoversData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [newsRes, marketRes] = await Promise.allSettled([
-          fetch('/api/news?limit=3'),
-          fetch('/api/market'),
-        ]);
-
-        if (newsRes.status === 'fulfilled') {
-          const newsJson = await newsRes.value.json();
+        const newsRes = await fetch('/api/news?limit=3');
+        if (newsRes.ok) {
+          const newsJson = await newsRes.json();
           if (newsJson.success && Array.isArray(newsJson.data)) {
             setHeadlines(newsJson.data.slice(0, 3));
           }
         }
-
-        if (marketRes.status === 'fulfilled') {
-          const marketJson = await marketRes.value.json();
-          if (marketJson.success && marketJson.data) {
-            setMovers({
-              gainers: marketJson.data.gainers || [],
-              losers: marketJson.data.losers || [],
-              updatedAt: marketJson.data.updatedAt,
-            });
-          }
-        }
       } catch (err) {
-        console.error('Failed to load top headlines or movers', err);
+        console.error('Failed to load top headlines', err);
       } finally {
         setLoading(false);
       }
@@ -244,68 +208,6 @@ export default function MarketOverview() {
           );
         })}
       </div>
-
-      {/* Top Gainers & Losers Ticker Strip */}
-      {movers && (movers.gainers.length > 0 || movers.losers.length > 0) && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '0.6rem 1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            fontSize: '0.8rem',
-            overflowX: 'auto',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-            }}
-          >
-            <Activity size={13} color="var(--accent-primary)" />
-            Movers
-          </span>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            {movers.gainers.slice(0, 3).map((g) => (
-              <Link
-                key={g.symbol}
-                href={`/company/${g.slug}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
-              >
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.name}</span>
-                <span style={{ color: 'var(--bullish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                  {formatPercent(g.changePercent)}
-                </span>
-              </Link>
-            ))}
-
-            <span style={{ color: 'var(--border-medium)' }}>|</span>
-
-            {movers.losers.slice(0, 3).map((l) => (
-              <Link
-                key={l.symbol}
-                href={`/company/${l.slug}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
-              >
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{l.name}</span>
-                <span style={{ color: 'var(--bearish)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                  {formatPercent(l.changePercent)}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

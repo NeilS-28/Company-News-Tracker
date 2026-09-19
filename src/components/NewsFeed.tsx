@@ -33,13 +33,6 @@ function getRelativeTimeString(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatCountdown(secondsRemaining: number): string {
-  if (secondsRemaining <= 0) return '00:00';
-  const mins = Math.floor(secondsRemaining / 60);
-  const secs = secondsRemaining % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
 export default function NewsFeed({
   initialArticles,
   companyId,
@@ -308,10 +301,8 @@ export default function NewsFeed({
                   <span style={{ color: 'var(--text-muted)' }}>Auto: Off</span>
                 ) : (
                   <>
+                    <span style={{ color: 'var(--text-muted)' }}>Auto: </span>
                     <strong style={{ color: 'var(--text-primary)' }}>{autoRefreshInterval}</strong>
-                    <span style={{ color: 'var(--text-muted)', marginLeft: 4, fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
-                      ({formatCountdown(secondsLeft)})
-                    </span>
                   </>
                 )}
               </span>
@@ -495,21 +486,6 @@ export default function NewsFeed({
             </span>
           )}
         </div>
-
-        {autoRefreshInterval !== 'off' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span>Next auto-update in:</span>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--accent-primary)',
-                fontWeight: 600,
-              }}
-            >
-              {formatCountdown(secondsLeft)}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Category Pills Bar */}
