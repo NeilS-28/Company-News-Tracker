@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface WatchlistButtonProps {
   companyId: number;
@@ -12,28 +13,30 @@ interface WatchlistButtonProps {
 export default function WatchlistButton({ companyId, size = 16, showLabel = false }: WatchlistButtonProps) {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('marketpulse-watchlist');
+    const storageKey = user ? `marketpulse-watchlist-${user.id}` : 'marketpulse-watchlist';
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         const ids: number[] = JSON.parse(saved);
         const inList = ids.includes(companyId);
-        // Microtask update to satisfy React 19 linter
         queueMicrotask(() => setIsInWatchlist(inList));
       } catch {
         // Ignore
       }
     }
-  }, [companyId]);
+  }, [companyId, user]);
 
   const toggleWatchlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     setLoading(true);
-    const saved = localStorage.getItem('marketpulse-watchlist');
+    const storageKey = user ? `marketpulse-watchlist-${user.id}` : 'marketpulse-watchlist';
+    const saved = localStorage.getItem(storageKey);
     let ids: number[] = [];
     if (saved) {
       try {
@@ -47,18 +50,23 @@ export default function WatchlistButton({ companyId, size = 16, showLabel = fals
     let nextIds: number[];
 
     if (exists) {
-      nextIds = ids.filter(id => id !== companyId);
+      nextIds = ids.filter((id) => id !== companyId);
       setIsInWatchlist(false);
     } else {
       nextIds = [...ids, companyId];
       setIsInWatchlist(true);
     }
 
-    localStorage.setItem('marketpulse-watchlist', JSON.stringify(nextIds));
+    localStorage.setItem(storageKey, JSON.stringify(nextIds));
 
-    // Also sync with server watchlist #1 in background
+    // Also sync with server user/default watchlist
     try {
-      await fetch('/api/watchlists/1', {
+      // Find active watchlist ID
+      const wlRes = await fetch('/api/watchlists');
+      const wlJson = await wlRes.json();
+      const targetId = wlJson.data?.[0]?.id || 1;
+
+      await fetch(`/api/watchlists/${targetId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

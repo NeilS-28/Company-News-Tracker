@@ -374,6 +374,7 @@ const dbData: DbSchema = {
   articleSectors: articleSectorsArr,
   watchlists: [],
   watchlistCompanies: [],
+  users: [],
 };
 
 db.writeAll(dbData);

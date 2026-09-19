@@ -2,23 +2,25 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Star, Plus, Trash2, Building2, TrendingUp, TrendingDown, Newspaper, Download } from 'lucide-react';
+import { Star, Plus, Trash2, Building2, TrendingUp, TrendingDown, Newspaper, Download, Sparkles } from 'lucide-react';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { CompanyWithQuote, NewsArticleWithRelations } from '@/types';
 import NewsCard from '@/components/NewsCard';
+import { useAuth } from '@/context/AuthContext';
 
 interface WatchlistData {
-  watchlist: { id: number; name: string };
+  watchlist: { id: number; name: string; userId?: string };
   companies: CompanyWithQuote[];
   news: NewsArticleWithRelations[];
 }
 
 export default function WatchlistsPage() {
+  const { user, openAuthModal } = useAuth();
   const [data, setData] = useState<WatchlistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [watchlists, setWatchlists] = useState<Array<{ id: number; name: string; companyCount: number }>>([]);
+  const [watchlists, setWatchlists] = useState<Array<{ id: number; name: string; companyCount: number; userId?: string }>>([]);
   const [activeWatchlistId, setActiveWatchlistId] = useState<number>(1);
 
   // Load all watchlists
@@ -26,8 +28,13 @@ export default function WatchlistsPage() {
     try {
       const res = await fetch('/api/watchlists');
       const json = await res.json();
-      if (json.success) {
+      if (json.success && Array.isArray(json.data)) {
         setWatchlists(json.data);
+        if (json.data.length > 0) {
+          setActiveWatchlistId((prev) =>
+            json.data.some((w: { id: number }) => w.id === prev) ? prev : json.data[0].id
+          );
+        }
       }
     } catch {
       // Fallback
@@ -36,7 +43,6 @@ export default function WatchlistsPage() {
 
   // Load active watchlist details & news
   const loadWatchlistData = useCallback(async (id: number) => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/watchlists/${id}`);
       const json = await res.json();
@@ -50,27 +56,50 @@ export default function WatchlistsPage() {
     }
   }, []);
 
+  // Reload watchlists whenever user logs in or out
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/watchlists')
-      .then((res) => res.json())
-      .then((json) => {
-        if (isMounted && json.success) setWatchlists(json.data);
-      })
-      .catch(() => {});
+    async function init() {
+      try {
+        const res = await fetch('/api/watchlists');
+        const json = await res.json();
+        if (isMounted && json.success && Array.isArray(json.data)) {
+          setWatchlists(json.data);
+          if (json.data.length > 0) {
+            setActiveWatchlistId((prev) =>
+              json.data.some((w: { id: number }) => w.id === prev) ? prev : json.data[0].id
+            );
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
-    fetch(`/api/watchlists/${activeWatchlistId}`)
-      .then((res) => res.json())
-      .then((json) => {
+  // Load active watchlist details
+  useEffect(() => {
+    if (!activeWatchlistId) return;
+    let isMounted = true;
+    queueMicrotask(() => setLoading(true));
+    async function load() {
+      try {
+        const res = await fetch(`/api/watchlists/${activeWatchlistId}`);
+        const json = await res.json();
         if (isMounted && json.success) {
           setData(json.data);
-          setLoading(false);
         }
-      })
-      .catch(() => {
+      } catch {
+        // Fallback
+      } finally {
         if (isMounted) setLoading(false);
-      });
-
+      }
+    }
+    load();
     return () => {
       isMounted = false;
     };
@@ -166,10 +195,41 @@ export default function WatchlistsPage() {
             <Star size={22} fill="currentColor" />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              Watchlists & Custom News Stream
-            </h1>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Watchlists & Custom News Stream
+              </h1>
+              {user ? (
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    color: 'var(--accent-primary)',
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                  }}
+                >
+                  Personalized for {user.name.split(' ')[0]}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    background: 'var(--bg-subtle)',
+                    color: 'var(--text-muted)',
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  Default Guest Mode
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
               Aggregate tailored headlines and corporate filings for the exact companies you follow
             </p>
           </div>
@@ -215,6 +275,38 @@ export default function WatchlistsPage() {
             <span>New</span>
           </button>
 
+          {data && watchlists.length > 1 && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Delete watchlist "${data.watchlist.name}"?`)) return;
+                try {
+                  const res = await fetch(`/api/watchlists/${activeWatchlistId}`, { method: 'DELETE' });
+                  const json = await res.json();
+                  if (json.success) {
+                    const remaining = watchlists.filter((w) => w.id !== activeWatchlistId);
+                    setWatchlists(remaining);
+                    if (remaining.length > 0) setActiveWatchlistId(remaining[0].id);
+                  }
+                } catch {
+                  // Ignore
+                }
+              }}
+              title="Delete Active Watchlist"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.45rem 0.6rem',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                color: '#ef4444',
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+
           {data && data.companies.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <button
@@ -259,6 +351,83 @@ export default function WatchlistsPage() {
           )}
         </div>
       </div>
+
+      {/* Guest Banner */}
+      {!user && (
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderRadius: 'var(--radius-lg)',
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 100%)',
+            border: '1px solid rgba(56, 189, 248, 0.22)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--accent-primary)',
+              }}
+            >
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                Sync and Personalize Your Watchlists
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                Create a free account or sign in to build custom portfolios, track private notes, and never lose your tracked companies.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => openAuthModal('login')}
+              style={{
+                padding: '0.4rem 0.85rem',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-medium)',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal('signup')}
+              style={{
+                padding: '0.4rem 0.85rem',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--accent-primary)',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-glow)',
+              }}
+            >
+              Sign Up Free
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* New Watchlist Inline Form */}
       {showCreate && (

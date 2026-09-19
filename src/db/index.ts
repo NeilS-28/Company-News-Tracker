@@ -13,6 +13,16 @@ export interface DbSchema {
   articleSectors: ArticleSectorRow[];
   watchlists: WatchlistRow[];
   watchlistCompanies: WatchlistCompanyRow[];
+  users: UserRow[];
+}
+
+export interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  salt: string;
+  createdAt: string;
 }
 
 export interface CompanyRow {
@@ -66,6 +76,7 @@ export interface ArticleSectorRow {
 
 export interface WatchlistRow {
   id: number;
+  userId?: string;
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -155,6 +166,7 @@ function getFallbackDb(): DbSchema {
     articleSectors: [],
     watchlists: [],
     watchlistCompanies: [],
+    users: [],
   };
 }
 
@@ -169,6 +181,7 @@ class JsonDatabase {
         const raw = fs.readFileSync(DB_PATH, 'utf-8');
         this.data = JSON.parse(raw) as DbSchema;
         if (this.data && Array.isArray(this.data.companies) && this.data.companies.length > 0) {
+          this.ensureUsersAndSeed();
           return this.data;
         }
       }
@@ -177,7 +190,47 @@ class JsonDatabase {
     }
 
     this.data = getFallbackDb();
+    this.ensureUsersAndSeed();
     return this.data;
+  }
+
+  private ensureUsersAndSeed() {
+    if (!this.data) return;
+    if (!Array.isArray(this.data.users)) {
+      this.data.users = [];
+    }
+    // Pre-seed demo user if not present
+    if (!this.data.users.some(u => u.email === 'demo@marketpulse.in')) {
+      this.data.users.push({
+        id: 'usr_demo_101',
+        name: 'Demo Investor',
+        email: 'demo@marketpulse.in',
+        passwordHash: '811ac87a39e76383121680924484daf1a539214e03d4bec3249c55b794600b3b7f7483769e750217f3ad85fed9e143d55300471c62f815c31dec63e248e08691',
+        salt: 'marketpulse_demo_salt_2026',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+      // Ensure demo user has a personalized portfolio watchlist
+      if (!this.data.watchlists.some(w => w.userId === 'usr_demo_101')) {
+        const wlId = (this.data.watchlists.length > 0 ? Math.max(...this.data.watchlists.map(w => w.id)) : 0) + 1;
+        this.data.watchlists.push({
+          id: wlId,
+          userId: 'usr_demo_101',
+          name: 'Tech & Growth Conviction',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        // Seed first 3 companies in demo watchlist
+        [1, 2, 3].forEach((cid, idx) => {
+          const maxId = (this.data!.watchlistCompanies.length > 0 ? Math.max(...this.data!.watchlistCompanies.map(wc => wc.id)) : 0) + 1;
+          this.data!.watchlistCompanies.push({
+            id: maxId,
+            watchlistId: wlId,
+            companyId: cid,
+            position: idx,
+          });
+        });
+      }
+    }
   }
 
   private save() {
@@ -387,39 +440,76 @@ class JsonDatabase {
     return newArticle;
   }
 
+  // ---- Users ----
+  getUserByEmail(email: string): UserRow | undefined {
+    const norm = email.trim().toLowerCase();
+    return this.load().users?.find(u => u.email.toLowerCase() === norm);
+  }
+
+  getUserById(id: string): UserRow | undefined {
+    return this.load().users?.find(u => u.id === id);
+  }
+
+  createUser(user: Omit<UserRow, 'id' | 'createdAt'>): UserRow {
+    const db = this.load();
+    if (!db.users) db.users = [];
+    const id = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const now = new Date().toISOString();
+    const newUser: UserRow = {
+      ...user,
+      id,
+      email: user.email.trim().toLowerCase(),
+      createdAt: now,
+    };
+    db.users.push(newUser);
+    this.save();
+    return newUser;
+  }
+
   // ---- Watchlists ----
-  getWatchlists(): WatchlistRow[] {
-    return this.load().watchlists;
+  getWatchlists(userId?: string): WatchlistRow[] {
+    const all = this.load().watchlists;
+    if (userId) {
+      return all.filter(w => w.userId === userId);
+    }
+    // Return watchlists that do not belong to a specific user (global/default)
+    return all.filter(w => !w.userId);
   }
 
   getWatchlistById(id: number): WatchlistRow | undefined {
     return this.load().watchlists.find(w => w.id === id);
   }
 
-  createWatchlist(name: string): WatchlistRow {
+  createWatchlist(name: string, userId?: string): WatchlistRow {
     const db = this.load();
     const id = (db.watchlists.length > 0 ? Math.max(...db.watchlists.map(w => w.id)) : 0) + 1;
     const now = new Date().toISOString();
-    const watchlist: WatchlistRow = { id, name, createdAt: now, updatedAt: now };
+    const watchlist: WatchlistRow = { id, userId, name, createdAt: now, updatedAt: now };
     db.watchlists.push(watchlist);
     this.save();
     return watchlist;
   }
 
-  updateWatchlist(id: number, name: string): WatchlistRow | null {
+  updateWatchlist(id: number, name: string, userId?: string): WatchlistRow | null {
     const db = this.load();
     const idx = db.watchlists.findIndex(w => w.id === id);
     if (idx === -1) return null;
+    if (userId && db.watchlists[idx].userId && db.watchlists[idx].userId !== userId) {
+      return null; // Forbidden: watchlist belongs to another user
+    }
     db.watchlists[idx].name = name;
     db.watchlists[idx].updatedAt = new Date().toISOString();
     this.save();
     return db.watchlists[idx];
   }
 
-  deleteWatchlist(id: number): boolean {
+  deleteWatchlist(id: number, userId?: string): boolean {
     const db = this.load();
     const idx = db.watchlists.findIndex(w => w.id === id);
     if (idx === -1) return false;
+    if (userId && db.watchlists[idx].userId && db.watchlists[idx].userId !== userId) {
+      return false; // Forbidden: watchlist belongs to another user
+    }
     db.watchlists.splice(idx, 1);
     db.watchlistCompanies = db.watchlistCompanies.filter(wc => wc.watchlistId !== id);
     this.save();

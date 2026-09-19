@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Activity } from 'lucide-react';
+import { Search, Activity, LogOut, Bookmark, ChevronDown } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import SearchDialog from './SearchDialog';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { user, loading, logout, openAuthModal } = useAuth();
+  const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   // Listen for Cmd+K / Ctrl+K
@@ -23,12 +27,32 @@ export default function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Close user dropdown menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const navLinks = [
     { label: 'Dashboard', href: '/' },
     { label: 'Companies', href: '/companies' },
     { label: 'Sectors', href: '/sectors' },
     { label: 'Watchlists', href: '/watchlists' },
   ];
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2) || 'U';
+  };
 
   return (
     <>
@@ -130,8 +154,8 @@ export default function Header() {
           </button>
 
           {/* Navigation Links & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -139,7 +163,7 @@ export default function Header() {
                     key={link.href}
                     href={link.href}
                     style={{
-                      padding: '0.45rem 0.85rem',
+                      padding: '0.45rem 0.75rem',
                       borderRadius: 'var(--radius-md)',
                       fontSize: '0.875rem',
                       fontWeight: isActive ? 600 : 500,
@@ -163,6 +187,164 @@ export default function Header() {
             />
 
             <ThemeToggle />
+
+            {/* Auth section */}
+            {!loading && (
+              <div style={{ position: 'relative' }} ref={menuRef}>
+                {user ? (
+                  <div>
+                    <button
+                      onClick={() => setUserMenuOpen(prev => !prev)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.3rem 0.6rem 0.3rem 0.35rem',
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        color: 'var(--text-primary)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {getInitials(user.name)}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user.name.split(' ')[0]}
+                      </span>
+                      <ChevronDown size={14} color="var(--text-muted)" />
+                    </button>
+
+                    {userMenuOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 'calc(100% + 8px)',
+                          width: '230px',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-medium)',
+                          borderRadius: 'var(--radius-lg)',
+                          boxShadow: 'var(--shadow-xl)',
+                          padding: '0.5rem',
+                          zIndex: 200,
+                          animation: 'fadeIn 0.15s ease-out',
+                        }}
+                      >
+                        <div style={{ padding: '0.65rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', marginBottom: '0.35rem' }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {user.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {user.email}
+                          </div>
+                        </div>
+
+                        <Link
+                          href="/watchlists"
+                          onClick={() => setUserMenuOpen(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.85rem',
+                            color: 'var(--text-primary)',
+                            textDecoration: 'none',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-subtle)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <Bookmark size={15} color="var(--accent-primary)" />
+                          <span>My Watchlists</span>
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            logout();
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.85rem',
+                            color: '#ef4444',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <LogOut size={15} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => openAuthModal('login')}
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        background: 'transparent',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border-medium)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => openAuthModal('signup')}
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        color: '#fff',
+                        background: 'var(--accent-primary)',
+                        border: 'none',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-glow)',
+                        transition: 'opacity 0.15s ease',
+                      }}
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>

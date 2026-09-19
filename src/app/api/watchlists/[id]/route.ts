@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { getMarketQuote } from '@/lib/providers/market';
 import { getAggregatedNews } from '@/lib/providers/news';
+import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -64,6 +65,18 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const watchlistId = Number(id);
+    const user = await getCurrentUser(request);
+    const watchlist = db.getWatchlistById(watchlistId);
+
+    if (!watchlist) {
+      return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
+    }
+
+    if (watchlist.userId && (!user || user.id !== watchlist.userId)) {
+      return NextResponse.json({ success: false, error: 'Unauthorized to modify this watchlist' }, { status: 403 });
+    }
+
     const body = await request.json();
     const name = (body.name || '').trim();
 
@@ -71,9 +84,9 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 });
     }
 
-    const updated = db.updateWatchlist(Number(id), name);
+    const updated = db.updateWatchlist(watchlistId, name, user ? user.id : undefined);
     if (!updated) {
-      return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Watchlist update failed' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: updated });
@@ -89,9 +102,21 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const ok = db.deleteWatchlist(Number(id));
-    if (!ok) {
+    const watchlistId = Number(id);
+    const user = await getCurrentUser(request);
+    const watchlist = db.getWatchlistById(watchlistId);
+
+    if (!watchlist) {
       return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
+    }
+
+    if (watchlist.userId && (!user || user.id !== watchlist.userId)) {
+      return NextResponse.json({ success: false, error: 'Unauthorized to delete this watchlist' }, { status: 403 });
+    }
+
+    const ok = db.deleteWatchlist(watchlistId, user ? user.id : undefined);
+    if (!ok) {
+      return NextResponse.json({ success: false, error: 'Watchlist deletion failed' }, { status: 404 });
     }
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
@@ -107,6 +132,17 @@ export async function POST(
   try {
     const { id } = await params;
     const watchlistId = Number(id);
+    const user = await getCurrentUser(request);
+    const watchlist = db.getWatchlistById(watchlistId);
+
+    if (!watchlist) {
+      return NextResponse.json({ success: false, error: 'Watchlist not found' }, { status: 404 });
+    }
+
+    if (watchlist.userId && (!user || user.id !== watchlist.userId)) {
+      return NextResponse.json({ success: false, error: 'Unauthorized to modify this watchlist' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { action, companyId } = body;
 

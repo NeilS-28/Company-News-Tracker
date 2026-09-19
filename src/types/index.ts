@@ -82,6 +82,7 @@ export interface ArticleSector {
 
 export interface Watchlist {
   id: number;
+  userId?: string;
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -91,6 +92,25 @@ export interface WatchlistCompany {
   watchlistId: number;
   companyId: number;
   position: number;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface SessionUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  user?: User;
+  error?: string;
 }
 
 // ============================================================

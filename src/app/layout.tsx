@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
+import { AuthProvider } from '@/context/AuthContext';
+import AuthModal from '@/components/AuthModal';
 
 export const metadata: Metadata = {
   title: `${APP_NAME} — Indian Stock Market News & NSE / BSE Equities Research`,
@@ -22,10 +24,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <Header />
-        <main className="container" style={{ paddingTop: '1.5rem', paddingBottom: '4rem', minHeight: 'calc(100vh - 140px)' }}>
-          {children}
-        </main>
+        <AuthProvider>
+          <Header />
+          <AuthModal />
+          <main className="container" style={{ paddingTop: '1.5rem', paddingBottom: '4rem', minHeight: 'calc(100vh - 140px)' }}>
+            {children}
+          </main>
+        </AuthProvider>
         <footer
           style={{
             borderTop: '1px solid var(--border-subtle)',
