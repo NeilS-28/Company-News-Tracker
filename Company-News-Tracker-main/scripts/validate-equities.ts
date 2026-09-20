@@ -1,0 +1,10 @@
+import equities from '../src/db/equities_master.json';
+const rows = equities as Array<{ticker:string;nseSymbol?:string;bseCode?:string;isin?:string}>;
+const nse = rows.filter(r => Boolean(r.nseSymbol));
+const bse = rows.filter(r => Boolean(r.bseCode));
+const duplicateIsins = rows.map(r=>r.isin).filter(Boolean).filter((v,i,a)=>a.indexOf(v)!==i);
+if (rows.length < 5000) throw new Error(`Coverage regression: only ${rows.length} equities`);
+if (nse.length < 2500) throw new Error(`NSE coverage regression: only ${nse.length}`);
+if (bse.length < 5000) throw new Error(`BSE coverage regression: only ${bse.length}`);
+if (duplicateIsins.length) throw new Error(`Duplicate ISINs: ${duplicateIsins.length}`);
+console.log(JSON.stringify({ total: rows.length, nse: nse.length, bse: bse.length, duplicateIsins: 0 }, null, 2));

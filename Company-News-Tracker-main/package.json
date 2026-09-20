@@ -1,0 +1,33 @@
+{
+  "name": "company-news-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
+    "db:seed": "npx tsx src/db/seed.ts",
+    "db:reset": "del data\\tracker.db 2>nul & npx tsx src/db/seed.ts",
+    "equities:validate": "tsx scripts/validate-equities.ts",
+    "equities:refresh": "tsx scripts/fetch-all-equities.ts && npm run equities:validate"
+  },
+  "dependencies": {
+    "date-fns": "^4.0.0",
+    "lucide-react": "^1.45.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "tsx": "^4.0.0",
+    "typescript": "^5"
+  }
+}
