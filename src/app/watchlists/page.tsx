@@ -275,7 +275,7 @@ export default function WatchlistsPage() {
             <span>New</span>
           </button>
 
-          {data && watchlists.length > 1 && (
+          {data && watchlists.length > 0 && (
             <button
               onClick={async () => {
                 if (!confirm(`Delete watchlist "${data.watchlist.name}"?`)) return;
@@ -285,7 +285,14 @@ export default function WatchlistsPage() {
                   if (json.success) {
                     const remaining = watchlists.filter((w) => w.id !== activeWatchlistId);
                     setWatchlists(remaining);
-                    if (remaining.length > 0) setActiveWatchlistId(remaining[0].id);
+                    if (remaining.length > 0) {
+                      setActiveWatchlistId(remaining[0].id);
+                    } else {
+                      setActiveWatchlistId(0);
+                      setData(null);
+                    }
+                  } else {
+                    alert(json.error || 'Failed to delete watchlist');
                   }
                 } catch {
                   // Ignore
