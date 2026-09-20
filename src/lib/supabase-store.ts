@@ -8,10 +8,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!url || !key) throw new Error('Persistent store is not configured');
   const res = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(init.headers || {}) },
+    headers: { apikey: key, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(init.headers || {}) },
     cache: 'no-store',
   });
-  if (!res.ok) throw new Error(`Persistent store request failed (${res.status})`);
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(`Persistent store request failed (${res.status}): ${errorBody.slice(0, 500)}`);
+  }
   const text = await res.text();
   return (text ? JSON.parse(text) : null) as T;
 }
