@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const id = `usr_${crypto.randomUUID()}`;
     const user = hasPersistentStore
       ? await createPersistentUser({ id, name, email, passwordHash, salt })
-      : db.createUser({ id, name, email, passwordHash, salt });
+      : db.createUser({ name, email, passwordHash, salt });
 
     const initialWatchlist = hasPersistentStore
       ? await createPersistentWatchlist('My Portfolio', user.id)

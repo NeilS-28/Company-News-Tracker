@@ -49,5 +49,5 @@ export async function getMultipleQuotes(symbols: string[]): Promise<Record<strin
 
 export async function getMarketOverviewData() {
   const indices = ['^NSEI', '^BSESN', '^NSEBANK'];
-  return { indices: await Promise.all(indices.map(getMarketQuote)), updatedAt: new Date().toISOString() };
+  return { indices: await Promise.all(indices.map(symbol => getMarketQuote(symbol))), updatedAt: new Date().toISOString() };
 }

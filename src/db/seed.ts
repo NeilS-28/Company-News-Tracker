@@ -126,6 +126,9 @@ const additionalCompanies = (equitiesMaster as Array<{
   industry: string;
   description: string;
   isin: string;
+  nseSymbol?: string;
+  bseCode?: string;
+  exchanges?: ('NSE' | 'BSE')[];
 }>)
   .filter(e => !nifty50Tickers.has(e.ticker))
   .map((e, idx) => ({
@@ -133,6 +136,9 @@ const additionalCompanies = (equitiesMaster as Array<{
     name: e.name,
     shortName: e.shortName,
     ticker: e.ticker,
+    nseSymbol: e.nseSymbol,
+    bseCode: e.bseCode,
+    exchanges: e.exchanges || [ ...(e.nseSymbol ? ['NSE' as const] : []), ...(e.bseCode ? ['BSE' as const] : []) ],
     sector: e.sector,
     sectorSlug: getSectorSlug(e.sector),
     industry: e.industry,
@@ -143,12 +149,21 @@ const additionalCompanies = (equitiesMaster as Array<{
     slug: slugify(e.ticker),
   }));
 
+const equityByTicker = new Map(
+  (equitiesMaster as Array<{ ticker: string; nseSymbol?: string; bseCode?: string; exchanges?: ('NSE' | 'BSE')[] }>).map(e => [e.ticker, e] as const)
+);
+
 const companiesArr = [
-  ...companyData.map((c, i) => ({
+  ...companyData.map((c, i) => {
+    const meta = equityByTicker.get(c.ticker);
+    return ({
     id: i + 1,
     name: c.name,
     shortName: c.shortName,
     ticker: c.ticker,
+    nseSymbol: meta?.nseSymbol || c.ticker,
+    bseCode: meta?.bseCode,
+    exchanges: meta?.exchanges || ['NSE' as const],
     sector: c.sector,
     sectorSlug: getSectorSlug(c.sector),
     industry: c.industry,
@@ -157,7 +172,8 @@ const companiesArr = [
     isNifty50: true,
     isActive: true,
     slug: slugify(c.shortName),
-  })),
+    });
+  }),
   ...additionalCompanies,
 ];
 

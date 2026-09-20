@@ -13,6 +13,7 @@ export async function GET() {
       topSymbols.map(async (s) => {
         const q = await getMarketQuote(s);
         const comp = companies.find(c => c.ticker === s);
+        if (!q) return null;
         return {
           symbol: s,
           name: comp?.shortName || s,
@@ -24,7 +25,8 @@ export async function GET() {
       })
     );
 
-    const sortedByGain = [...quotes].sort((a, b) => b.changePercent - a.changePercent);
+    const availableQuotes = quotes.filter((q): q is NonNullable<typeof q> => q !== null);
+    const sortedByGain = [...availableQuotes].sort((a, b) => b.changePercent - a.changePercent);
     const gainers = sortedByGain.filter(q => q.changePercent > 0).slice(0, 5);
     const losers = [...sortedByGain].reverse().filter(q => q.changePercent < 0).slice(0, 5);
 
@@ -32,7 +34,6 @@ export async function GET() {
       success: true,
       data: {
         indices: overview.indices,
-        marketBreadth: overview.marketBreadth,
         gainers,
         losers,
         updatedAt: overview.updatedAt,
