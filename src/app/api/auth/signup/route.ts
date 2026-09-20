@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { generateSalt, hashPassword, createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import crypto from 'crypto';
-import { hasPersistentStore, persistentUserByEmail, createPersistentUser, createPersistentWatchlist, addPersistentCompany } from '@/lib/supabase-store';
+import { hasPersistentStore, persistentUserByEmail, createPersistentUser } from '@/lib/supabase-store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,13 +40,6 @@ export async function POST(request: NextRequest) {
       ? await createPersistentUser({ id, name, email, passwordHash, salt })
       : db.createUser({ name, email, passwordHash, salt });
 
-    const initialWatchlist = hasPersistentStore
-      ? await createPersistentWatchlist('My Portfolio', user.id)
-      : db.createWatchlist('My Portfolio', user.id);
-    for (const cid of [1, 2, 3]) {
-      if (hasPersistentStore) await addPersistentCompany(initialWatchlist.id, cid);
-      else db.addCompanyToWatchlist(initialWatchlist.id, cid);
-    }
 
     // Generate JWT token
     const token = createSessionToken({
