@@ -50,6 +50,11 @@ export default function NewsFeed({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [relativeTime, setRelativeTime] = useState<string>('Not checked yet');
   const [showRefreshSuccess, setShowRefreshSuccess] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<{ archive: string; sources: { provider: string; status: string; last_success_at: string | null }[] } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/providers').then(res => res.json()).then(setProviderStatus).catch(() => setProviderStatus({ archive: 'unavailable', sources: [] }));
+  }, []);
 
   // Lazy initialize interval preference from localStorage
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshOption>(() => {
@@ -223,6 +228,14 @@ export default function NewsFeed({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {providerStatus && (
+        <div role="status" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+          Daily archive: {providerStatus.archive === 'available' ? 'connected' : 'unavailable'}
+          {providerStatus.sources.map(source => (
+            <span key={source.provider}> · {source.provider === 'nse-filing' ? 'NSE filings' : 'News'}: {source.status === 'ok' ? 'checked' : 'source unavailable'}{source.last_success_at ? ` ${new Date(source.last_success_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST` : ''}</span>
+          ))}
+        </div>
+      )}
       {/* Top Header Controls Bar */}
       <div
         style={{

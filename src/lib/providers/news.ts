@@ -81,18 +81,21 @@ function normalizeEntityText(value: string): string {
   return value.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function companyMatchesText(company: { name: string; shortName: string; ticker: string }, rawText: string): boolean {
+export function companyMatchesText(company: { name: string; shortName: string; ticker: string }, rawText: string): boolean {
   const text = ` ${normalizeEntityText(rawText)} `;
   const aliases = [company.name, company.shortName]
     .map(normalizeEntityText)
-    .map(v => v.replace(/\b(limited|ltd|india|industries|corporation|corp|company|co)\b/g, ' ').replace(/\s+/g, ' ').trim())
-    .filter(v => v.length >= 4);
-  const ticker = normalizeEntityText(company.ticker);
-  return aliases.some(a => text.includes(` ${a} `)) || (ticker.length >= 3 && text.includes(` ${ticker} `));
+    .filter(v => v.length >= 5 && (v.includes(' ') || v.length >= 7));
+  // Exchange symbols are often ordinary words. Require a distinct uppercase symbol
+  // in the headline rather than treating every lowercase word as a ticker.
+  const symbol = company.ticker;
+  const symbolMention = symbol.length >= 4 && symbol === symbol.toUpperCase() &&
+    new RegExp(`(?:^|[^A-Za-z0-9])${symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^A-Za-z0-9])`).test(rawText);
+  return aliases.some(a => text.includes(` ${a} `)) || symbolMention;
 }
 
 // Helper to tag company & sector entities from title/snippet
-function tagEntities(
+export function tagEntities(
   title: string,
   summary: string,
   explicitCompanyId?: number,
@@ -110,12 +113,7 @@ function tagEntities(
     if (comp && companyMatchesText(comp, `${title} ${summary}`)) matchedCompanies.push({ id: comp.id, name: comp.name, ticker: comp.ticker, slug: comp.slug });
   } else {
     for (const comp of allCompanies) {
-      const ticker = comp.ticker.toLowerCase();
-      // Match ticker as word boundary or recognizable short name
-      const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'i');
-      if (
-        companyMatchesText(comp, text) || tickerRegex.test(text)
-      ) {
+      if (companyMatchesText(comp, `${title} ${summary}`)) {
         matchedCompanies.push({ id: comp.id, name: comp.name, ticker: comp.ticker, slug: comp.slug });
         if (matchedCompanies.length >= 3) break;
       }
@@ -227,7 +225,8 @@ export async function fetchGoogleNewsRss(
   companyId?: number,
   sectorId?: number,
   forceRefresh = false,
-  todayOnly = false
+  todayOnly = false,
+  failOnError = false
 ): Promise<NewsArticleWithRelations[]> {
   const finalQuery = todayOnly ? `${query} when:1d` : query;
   const cacheKey = `rss:${finalQuery}:${companyId || 0}:${sectorId || 0}`;
@@ -276,6 +275,7 @@ export async function fetchGoogleNewsRss(
     return items;
   } catch (err) {
     console.error('RSS fetch error for query:', finalQuery, err);
+    if (failOnError) throw err;
     return [];
   }
 }
@@ -319,6 +319,17 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     offset: 0,
   }) as NewsArticleWithRelations[];
 
+  // Keep the daily archive separate from the file DB (which is ephemeral on Vercel).
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { storedNews } = await import('@/lib/news-store');
+    try {
+      const archived = await storedNews();
+      localArticles = [...archived, ...localArticles];
+    } catch (error) {
+      console.error('News archive unavailable', error);
+    }
+  }
+
   let liveItems: NewsArticleWithRelations[] = [];
 
   // Determine appropriate live query
@@ -353,6 +364,16 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
     liveItems = await fetchGoogleNewsRss(marketQuery, undefined, undefined, forceRefresh, todayOnly);
   }
 
+  if (localArticles.length) {
+    localArticles = localArticles.filter(item =>
+      (!companyId || item.companies.some(c => c.id === companyId)) &&
+      (!sectorId || item.sectors.some(s => s.id === sectorId)) &&
+      (!category || category === 'all' || item.category === category) &&
+      (!sentiment || item.sentiment === sentiment) &&
+      (!search || `${item.title} ${item.summary}`.toLowerCase().includes(search.toLowerCase()))
+    );
+  }
+
   if (liveItems.length > 0) {
     // A search-engine query is not proof that an article is about the company.
     // Keep company pages clean by requiring a genuine title/summary entity match.
@@ -379,7 +400,9 @@ export async function getAggregatedNews(options: GetNewsOptions = {}): Promise<{
 
     const freshNewItems = filteredLive.filter(item => {
       const norm = item.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
-      return !existingTitles.has(norm);
+      if (existingTitles.has(norm)) return false;
+      existingTitles.add(norm);
+      return true;
     });
 
     localArticles = [...freshNewItems, ...localArticles];

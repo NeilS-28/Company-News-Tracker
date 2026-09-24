@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { generateSalt, hashPassword, createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import crypto from 'crypto';
 import { hasPersistentStore, persistentUserByEmail, createPersistentUser } from '@/lib/supabase-store';
+import { withinLimit, mailConfigured, issueMailToken } from '@/lib/account-security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,8 +22,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    if (!password || password.length < 6) {
-      return NextResponse.json({ success: false, error: 'Password must be at least 6 characters.' }, { status: 400 });
+    if (!password || password.length < 10) {
+      return NextResponse.json({ success: false, error: 'Password must be at least 10 characters.' }, { status: 400 });
+    }
+    if (!(await withinLimit(request, 'signup', 'all', 5, 60 * 60))) {
+      return NextResponse.json({ success: false, error: 'Too many signups. Try again later.' }, { status: 429 });
     }
 
     // Check if user already exists
@@ -37,8 +41,13 @@ export async function POST(request: NextRequest) {
 
     const id = `usr_${crypto.randomUUID()}`;
     const user = hasPersistentStore
-      ? await createPersistentUser({ id, name, email, passwordHash, salt })
+      ? await createPersistentUser({ id, name, email, passwordHash, salt }, mailConfigured)
       : db.createUser({ name, email, passwordHash, salt });
+
+    if (mailConfigured) {
+      await issueMailToken(user.id, email, 'verify');
+      return NextResponse.json({ success: true, needsVerification: true, message: 'Check your inbox to verify your email, then sign in.' }, { status: 201 });
+    }
 
 
     // Generate JWT token

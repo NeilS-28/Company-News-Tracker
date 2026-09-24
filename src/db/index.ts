@@ -23,6 +23,8 @@ export interface UserRow {
   passwordHash: string;
   salt: string;
   createdAt: string;
+  emailVerifiedAt?: string | null;
+  sessionVersion?: number;
 }
 
 export interface CompanyRow {

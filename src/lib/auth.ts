@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { db, UserRow } from '@/db';
 import { hasPersistentStore, persistentUserById } from '@/lib/supabase-store';
+import { mailConfigured } from '@/lib/account-security';
 
 const JWT_SECRET = process.env.AUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'marketpulse-local-development-secret');
 if (!JWT_SECRET) throw new Error('AUTH_SECRET must be configured in production');
@@ -15,6 +16,7 @@ export interface TokenPayload {
   name: string;
   email: string;
   exp: number;
+  ver?: number;
 }
 
 /**
@@ -71,7 +73,7 @@ function base64UrlDecode(str: string): string {
 /**
  * Generate signed JWT token
  */
-export function createSessionToken(user: { id: string; name: string; email: string }, expiresInDays = 7): string {
+export function createSessionToken(user: { id: string; name: string; email: string; sessionVersion?: number }, expiresInDays = 7): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const exp = Math.floor(Date.now() / 1000) + expiresInDays * 24 * 60 * 60;
   const payload: TokenPayload = {
@@ -79,6 +81,7 @@ export function createSessionToken(user: { id: string; name: string; email: stri
     name: user.name,
     email: user.email,
     exp,
+    ver: user.sessionVersion || 0,
   };
 
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
@@ -153,7 +156,11 @@ export async function getCurrentUser(request: NextRequest): Promise<UserRow | nu
   const payload = verifySessionToken(token);
   if (!payload || !payload.id) return null;
 
-  if (hasPersistentStore) return await persistentUserById(payload.id);
+  if (hasPersistentStore) {
+    const user = await persistentUserById(payload.id);
+    if (!user || (user.sessionVersion || 0) !== (payload.ver || 0) || (mailConfigured && !user.emailVerifiedAt)) return null;
+    return user;
+  }
   const user = db.getUserById(payload.id);
   return user || null;
 }

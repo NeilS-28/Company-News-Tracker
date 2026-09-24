@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean }>;
   logout: () => Promise<void>;
   isAuthModalOpen: boolean;
   authModalMode: 'login' | 'signup';
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string; needsVerification?: boolean }> => {
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAuthModalOpen(false);
         return { success: true };
       }
+      if (data.success && data.needsVerification) return { success: true, needsVerification: true };
       return { success: false, error: data.error || 'Signup failed' };
     } catch {
       return { success: false, error: 'Network error. Please try again.' };

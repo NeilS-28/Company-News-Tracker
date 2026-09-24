@@ -84,6 +84,7 @@ export default function NewsCard({ article }: NewsCardProps) {
           <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
             {article.source}
           </span>
+          {article.source === 'NSE filing' && <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>Official filing</span>}
           <span>•</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
             {formatDate(article.publishedAt)}

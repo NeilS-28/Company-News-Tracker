@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lock, Mail, User as UserIcon, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 export default function AuthModal() {
   const { isAuthModalOpen, authModalMode, closeAuthModal, login, signup } = useAuth();
@@ -11,6 +12,7 @@ export default function AuthModal() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -46,6 +48,9 @@ export default function AuthModal() {
       const res = await signup(name.trim(), email.trim(), password);
       if (!res.success) {
         setError(res.error || 'Failed to create account.');
+      } else if (res.needsVerification) {
+        setNotice('Check your inbox to verify your email, then sign in.');
+        setMode('login');
       }
     } else {
       const res = await login(email.trim(), password);
@@ -203,6 +208,7 @@ export default function AuthModal() {
               {error}
             </div>
           )}
+          {notice && <p role="status" style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{notice} <Link href="/verify-email" onClick={closeAuthModal}>Resend link</Link></p>}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {mode === 'signup' && (
@@ -304,8 +310,8 @@ export default function AuthModal() {
                 <input
                   type="password"
                   required
-                  minLength={6}
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                  minLength={mode === 'signup' ? 10 : undefined}
+                  placeholder={mode === 'signup' ? 'At least 10 characters' : '••••••••'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -358,6 +364,7 @@ export default function AuthModal() {
               )}
             </button>
           </form>
+          {mode === 'login' && <p style={{ marginTop: '0.9rem', fontSize: '0.8rem' }}><Link href="/reset-password" onClick={closeAuthModal}>Forgot your password?</Link></p>}
 
           {/* Footer toggle */}
           <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
