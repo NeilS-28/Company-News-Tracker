@@ -48,17 +48,6 @@ export function formatDate(dateString: string, formatPattern = 'dd MMM yyyy, hh:
       return `Today, ${format(date, 'hh:mm a')}`;
     }
 
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday =
-      date.getDate() === yesterday.getDate() &&
-      date.getMonth() === yesterday.getMonth() &&
-      date.getFullYear() === yesterday.getFullYear();
-
-    if (isYesterday) {
-      return `Yesterday, ${format(date, 'hh:mm a')}`;
-    }
-
     return format(date, formatPattern);
   } catch {
     return dateString;
