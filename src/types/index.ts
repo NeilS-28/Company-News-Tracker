@@ -133,7 +133,7 @@ export interface MarketQuote {
   volume: number;
   timestamp: string;
   /** Indicates the freshness / origin of this quote */
-  status: 'live' | 'delayed';
+  status: 'live' | 'delayed' | 'closed';
   /** The real market data provider name. */
   source?: string;
 }

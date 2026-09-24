@@ -56,7 +56,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
         };
       case 'in-talks':
         return {
-          label: 'In Active Talks',
+          label: 'Reports: In Talks',
           bg: 'var(--accent-soft)',
           border: 'var(--accent-border)',
           text: 'var(--accent-primary)',
@@ -64,7 +64,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
         };
       case 'sebi-clarification':
         return {
-          label: 'SEBI Clarification Filed',
+          label: 'Clarification Mentioned',
           bg: 'var(--accent-soft)',
           border: 'var(--accent-border)',
           text: 'var(--accent-primary)',
@@ -72,7 +72,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
         };
       case 'confirmed':
         return {
-          label: 'Confirmed / Signed',
+          label: 'Reports: Signed Deal',
           bg: 'rgba(16, 185, 129, 0.12)',
           border: 'rgba(16, 185, 129, 0.3)',
           text: 'var(--bullish)',
@@ -80,7 +80,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
         };
       case 'denied':
         return {
-          label: 'Denied by Company',
+          label: 'Reports: Denied',
           bg: 'rgba(239, 68, 68, 0.12)',
           border: 'rgba(239, 68, 68, 0.3)',
           text: 'var(--bearish)',
@@ -91,11 +91,11 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
 
   const statusFilters = [
     { id: 'all', label: 'All Buzz & Deals' },
-    { id: 'unverified-rumour', label: '🟡 Rumours' },
-    { id: 'in-talks', label: '🔵 In Talks' },
-    { id: 'sebi-clarification', label: '🟣 SEBI Clarifications' },
-    { id: 'confirmed', label: '🟢 Confirmed Pacts' },
-    { id: 'denied', label: '🔴 Denied' },
+    { id: 'unverified-rumour', label: 'Rumours' },
+    { id: 'in-talks', label: 'In Talks' },
+    { id: 'sebi-clarification', label: 'Clarifications' },
+    { id: 'confirmed', label: 'Reported Deals' },
+    { id: 'denied', label: 'Denials' },
   ] as const;
 
   return (
@@ -126,7 +126,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
               color: 'var(--accent-primary)',
             }}
           >
-            <Radar size={22} className="live-indicator" style={{ background: 'transparent' }} />
+            <Radar size={22} />
           </div>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -134,7 +134,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
               {companyName && <span style={{ color: 'var(--accent-primary)' }}>• {companyName}</span>}
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Tracking M&A scoops, deal-desk whispers, joint ventures, and official SEBI LODR rumour clarifications
+              Headline-based deal signals. Labels are automated, not verification of an exchange filing or transaction.
             </p>
           </div>
         </div>
@@ -302,7 +302,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
                         fontWeight: 600,
                       }}
                     >
-                      {item.sourceConfidence} verification
+                      {item.sourceConfidence} keyword match
                     </span>
                   )}
                 </div>

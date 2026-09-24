@@ -69,7 +69,7 @@ export default function Header() {
         }}
       >
         <div
-          className="container"
+          className="container header-main"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -81,6 +81,7 @@ export default function Header() {
           {/* Logo */}
           <Link
             href="/"
+            className="header-brand"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -110,13 +111,15 @@ export default function Header() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span style={{ color: 'var(--text-primary)' }}>Market</span>
               <span style={{ color: 'var(--accent-primary)' }}>Pulse</span>
-              <span className="live-indicator" style={{ marginLeft: 2 }} title="Live Market Feed Active" />
+              <span className="live-indicator" style={{ marginLeft: 2 }} title="MarketPulse news feed" />
             </div>
           </Link>
 
           {/* Search Bar Trigger */}
           <button
             onClick={() => setSearchOpen(true)}
+            className="header-search"
+            aria-label="Search companies, tickers, and sectors"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -138,9 +141,10 @@ export default function Header() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Search size={15} color="var(--accent-primary)" />
-              <span>Search companies, tickers, sectors...</span>
+              <span className="header-search-label">Search companies, tickers, sectors...</span>
             </div>
             <kbd
+              className="header-shortcut"
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.7rem',
@@ -155,8 +159,8 @@ export default function Header() {
           </button>
 
           {/* Navigation Links & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <nav className="header-desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -180,6 +184,7 @@ export default function Header() {
             </nav>
 
             <div
+              className="header-divider"
               style={{
                 width: 1,
                 height: 24,
@@ -224,7 +229,7 @@ export default function Header() {
                       >
                         {getInitials(user.name)}
                       </div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 600, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span className="header-user-name" style={{ fontSize: '0.82rem', fontWeight: 600, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {user.name.split(' ')[0]}
                       </span>
                       <ChevronDown size={14} color="var(--text-muted)" />
@@ -240,7 +245,7 @@ export default function Header() {
                           background: 'var(--bg-card)',
                           border: '1px solid var(--border-medium)',
                           borderRadius: 'var(--radius-lg)',
-                          boxShadow: 'var(--shadow-xl)',
+                          boxShadow: 'var(--shadow-lg)',
                           padding: '0.5rem',
                           zIndex: 200,
                           animation: 'fadeIn 0.15s ease-out',
@@ -269,7 +274,7 @@ export default function Header() {
                             textDecoration: 'none',
                             transition: 'background 0.15s ease',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-subtle)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           <Bookmark size={15} color="var(--accent-primary)" />
@@ -326,6 +331,7 @@ export default function Header() {
                       Sign In
                     </button>
                     <button
+                      className="header-signup"
                       onClick={() => openAuthModal('signup')}
                       style={{
                         padding: '0.4rem 0.85rem',
@@ -348,6 +354,13 @@ export default function Header() {
             )}
           </div>
         </div>
+        <nav className="header-mobile-nav container" aria-label="Main navigation">
+          {navLinks.map(link => (
+            <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />

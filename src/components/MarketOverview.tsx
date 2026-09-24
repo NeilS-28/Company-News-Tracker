@@ -41,6 +41,7 @@ export default function MarketOverview() {
           <div className="glass-panel skeleton" style={{ width: 220, height: 24 }} />
         </div>
         <div
+          className="responsive-card-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -84,12 +85,13 @@ export default function MarketOverview() {
           </span>
         </div>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+            {new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric' })}
         </span>
       </div>
 
       {/* Top 3 Headlines Grid */}
       <div
+        className="responsive-card-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',

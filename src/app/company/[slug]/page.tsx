@@ -10,8 +10,8 @@ import {
   Globe,
   ExternalLink,
 } from 'lucide-react';
-import { formatCurrency, formatPercent, formatPoints } from '@/lib/utils';
-import { CompanyWithQuote, NewsArticleWithRelations } from '@/types';
+import { formatCurrency, formatPercent, formatPoints, formatMarketTime } from '@/lib/utils';
+import { CompanyWithQuote, MarketQuote, NewsArticleWithRelations } from '@/types';
 import WatchlistButton from '@/components/WatchlistButton';
 import NewsCard from '@/components/NewsCard';
 import DealRadar from '@/components/DealRadar';
@@ -19,16 +19,7 @@ import { COMPANY_IR_PORTALS } from '@/lib/providers/deals';
 
 interface CompanyData {
   company: CompanyWithQuote;
-  quote: {
-    price: number;
-    change: number;
-    changePercent: number;
-    open: number;
-    dayHigh: number;
-    dayLow: number;
-    previousClose: number;
-    volume: number;
-  };
+  quote: MarketQuote | null;
   news: NewsArticleWithRelations[];
   peers: CompanyWithQuote[];
 }
@@ -65,7 +56,7 @@ export default function CompanyPage({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-panel skeleton" style={{ height: 180 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+        <div className="responsive-columns" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
           <div className="glass-panel skeleton" style={{ height: 400 }} />
           <div className="glass-panel skeleton" style={{ height: 400 }} />
         </div>
@@ -137,7 +128,7 @@ export default function CompanyPage({
                 border: '1px solid var(--accent-border)',
               }}
             >
-              {company.ticker}.NS
+              {company.nseSymbol ? `${company.nseSymbol}.NS` : `${company.bseCode}.BO`}
             </span>
             {company.isNifty50 && (
               <span
@@ -271,7 +262,7 @@ export default function CompanyPage({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                NSE Quote / Last Close
+                {company.nseSymbol ? 'NSE' : 'BSE'} Quote / Last Close
               </span>
               {(quote as { status?: string }).status && (
                 <span
@@ -284,7 +275,7 @@ export default function CompanyPage({
                     color: (quote as { status?: string }).status === 'live' ? 'var(--bullish)' : 'var(--text-muted)',
                   }}
                 >
-                  ● LIVE
+                  {quote.status === 'live' ? '● LIVE' : quote.status === 'closed' ? 'MARKET CLOSED' : 'DELAYED'}
                 </span>
               )}
             </div>
@@ -306,6 +297,9 @@ export default function CompanyPage({
                 {isPos ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span>{formatPercent(quote.changePercent)}</span>
               </div>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+              {quote.source || 'Market data'} · Price as of {formatMarketTime(quote.timestamp)}
             </div>
 
             <div
@@ -341,7 +335,7 @@ export default function CompanyPage({
       </div>
 
       {/* Main Content Grid: Left = News / Deals, Right = Peers & Overview */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '1.75rem' }}>
+      <div className="responsive-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '1.75rem' }}>
         {/* Left: News or Deal Radar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Subtabs */}

@@ -3,6 +3,15 @@ import { MarketQuote } from '@/types';
 const cache: Record<string, { quote: MarketQuote | null; expiresAt: number }> = {};
 const CACHE_TTL_MS = 60_000;
 
+export function quoteStatus(meta: { marketState?: string; exchangeDataDelayedBy?: number },
+  marketTime: number, now = Date.now()): MarketQuote['status'] {
+  if (meta.marketState === 'CLOSED' || meta.marketState === 'PRE' || meta.marketState === 'POST') return 'closed';
+  // "Live" requires an explicit zero-delay claim from the provider and a recent trade.
+  if (meta.marketState === 'REGULAR' && meta.exchangeDataDelayedBy === 0 &&
+      marketTime <= now && now - marketTime <= 5 * 60_000) return 'live';
+  return 'delayed';
+}
+
 /** Fetches a real quote. Unavailable data is null; fabricated/reference prices are never returned. */
 export async function getMarketQuote(symbol: string, exchange: 'NSE' | 'BSE' = 'NSE'): Promise<MarketQuote | null> {
   const cleanSymbol = symbol.toUpperCase().replace(/\.(NS|BO)$/i, '');
@@ -22,7 +31,9 @@ export async function getMarketQuote(symbol: string, exchange: 'NSE' | 'BSE' = '
     if (res.ok) {
       const data = await res.json();
       const meta = data?.chart?.result?.[0]?.meta;
-      if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+      const marketTime = Number(meta?.regularMarketTime) * 1000;
+      if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0 &&
+          Number.isFinite(marketTime) && marketTime > 0) {
         const price = meta.regularMarketPrice;
         const prevClose = meta.chartPreviousClose || meta.previousClose || price;
         const change = Number((price - prevClose).toFixed(2));
@@ -31,7 +42,8 @@ export async function getMarketQuote(symbol: string, exchange: 'NSE' | 'BSE' = '
           changePercent: prevClose ? Number(((change / prevClose) * 100).toFixed(2)) : 0,
           previousClose: prevClose, open: meta.regularMarketOpen || price,
           dayHigh: meta.regularMarketDayHigh || price, dayLow: meta.regularMarketDayLow || price,
-          volume: meta.regularMarketVolume || 0, timestamp: new Date().toISOString(), status: 'live', source: 'Yahoo Finance',
+          volume: meta.regularMarketVolume || 0, timestamp: new Date(marketTime).toISOString(),
+          status: quoteStatus(meta, marketTime), source: 'Yahoo Finance',
         };
         cache[cacheKey] = { quote, expiresAt: Date.now() + CACHE_TTL_MS };
         return quote;

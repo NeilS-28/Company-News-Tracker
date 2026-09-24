@@ -19,6 +19,15 @@ export function formatPoints(points: number): string {
   }).format(points);
 }
 
+export function formatMarketTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return 'Time unavailable';
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  }).format(date) + ' IST';
+}
+
 export function formatPercent(percent: number, showSign = true): string {
   const sign = showSign && percent > 0 ? '+' : '';
   return `${sign}${percent.toFixed(2)}%`;
@@ -39,16 +48,20 @@ export function formatDate(dateString: string, formatPattern = 'dd MMM yyyy, hh:
     if (isNaN(date.getTime())) return dateString;
 
     const now = new Date();
-    const isToday =
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear();
+    const indiaDay = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric',
+    });
+    const isToday = indiaDay.format(date) === indiaDay.format(now);
+
+    if (formatPattern !== 'dd MMM yyyy, hh:mm a') return format(date, formatPattern);
 
     if (isToday) {
-      return `Today, ${format(date, 'hh:mm a')}`;
+      return `Today, ${new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true,
+      }).format(date)} IST`;
     }
 
-    return format(date, formatPattern);
+    return formatMarketTime(dateString);
   } catch {
     return dateString;
   }

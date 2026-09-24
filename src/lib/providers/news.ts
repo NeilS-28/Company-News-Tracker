@@ -111,9 +111,6 @@ function tagEntities(
   } else {
     for (const comp of allCompanies) {
       const ticker = comp.ticker.toLowerCase();
-      const shortName = comp.shortName.toLowerCase();
-      const name = comp.name.toLowerCase();
-      
       // Match ticker as word boundary or recognizable short name
       const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'i');
       if (
@@ -155,7 +152,7 @@ async function fetchNewsApiKey(query: string, companyId?: number): Promise<NewsA
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: NewsApiArticle, index: number) => {
+    return data.articles.filter((item: NewsApiArticle) => item.publishedAt && !isNaN(Date.parse(item.publishedAt))).map((item: NewsApiArticle, index: number) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
         id: stableArticleId(item.url || '', item.title || `newsapi-${index}`),
@@ -163,11 +160,11 @@ async function fetchNewsApiKey(query: string, companyId?: number): Promise<NewsA
         summary: item.description || item.title || '',
         source: item.source?.name || 'Financial News',
         sourceUrl: item.url || '#',
-        publishedAt: item.publishedAt || new Date().toISOString(),
+        publishedAt: item.publishedAt!,
         imageUrl: item.urlToImage || null,
         sentiment: classifySentiment(item.title || ''),
         category: classifyCategory(item.title || ''),
-        createdAt: item.publishedAt || new Date().toISOString(),
+        createdAt: item.publishedAt!,
         companies,
         sectors,
       };
@@ -191,7 +188,7 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
     const data = await res.json();
     if (!Array.isArray(data.articles)) return [];
 
-    return data.articles.map((item: GNewsArticle, index: number) => {
+    return data.articles.filter((item: GNewsArticle) => item.publishedAt && !isNaN(Date.parse(item.publishedAt))).map((item: GNewsArticle, index: number) => {
       const { companies, sectors } = tagEntities(item.title || '', item.description || '', companyId);
       return {
         id: stableArticleId(item.url || '', item.title || `gnews-${index}`),
@@ -199,11 +196,11 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
         summary: item.description || item.title || '',
         source: item.source?.name || 'GNews Feed',
         sourceUrl: item.url || '#',
-        publishedAt: item.publishedAt || new Date().toISOString(),
+        publishedAt: item.publishedAt!,
         imageUrl: item.image || null,
         sentiment: classifySentiment(item.title || ''),
         category: classifyCategory(item.title || ''),
-        createdAt: item.publishedAt || new Date().toISOString(),
+        createdAt: item.publishedAt!,
         companies,
         sectors,
       };
@@ -213,17 +210,15 @@ async function fetchGNewsKey(query: string, companyId?: number): Promise<NewsArt
   }
 }
 
-// Helper to check if a publishedAt string is from the current day / last 24h
-export function isCurrentDay(dateStr: string): boolean {
+// Calendar day in India, rather than a rolling 24-hour window or the server's timezone.
+export function isCurrentDay(dateStr: string, now = new Date()): boolean {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return false;
-  const now = new Date();
-  const isSameCalendarDay =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
-  const isWithin24Hours = (now.getTime() - date.getTime()) <= 24 * 60 * 60 * 1000 && (now.getTime() - date.getTime()) >= -3600000;
-  return isSameCalendarDay || isWithin24Hours;
+  if (date.getTime() > now.getTime()) return false;
+  const indiaDay = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+  });
+  return indiaDay.format(date) === indiaDay.format(now);
 }
 
 // Free Google News RSS fallback (always available without API keys)
@@ -246,7 +241,9 @@ export async function fetchGoogleNewsRss(
       `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 35).map((item, index) => {
+    const items: NewsArticleWithRelations[] = (feed.items || []).slice(0, 35)
+      .filter(item => !isNaN(Date.parse(item.isoDate || item.pubDate || '')))
+      .map((item, index) => {
       const lastDash = (item.title || '').lastIndexOf(' - ');
       let title = item.title || 'Market Update';
       let source = (item as RssFeedItem).source?._ || item.creator || 'Financial News';
@@ -255,7 +252,7 @@ export async function fetchGoogleNewsRss(
         source = (item.title || '').substring(lastDash + 3).trim();
       }
 
-      const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
+      const publishedAt = item.isoDate || item.pubDate || '';
       const summary = item.contentSnippet || item.content || title;
       const { companies, sectors } = tagEntities(title, summary, companyId, sectorId);
 

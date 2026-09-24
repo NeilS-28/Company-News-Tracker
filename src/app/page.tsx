@@ -7,6 +7,7 @@ import NewsFeed from '@/components/NewsFeed';
 import CompanyGrid from '@/components/CompanyGrid';
 import { Newspaper, Building2, Layers, Star, Radar } from 'lucide-react';
 import DealRadar from '@/components/DealRadar';
+import WatchlistHighlights from '@/components/WatchlistHighlights';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'news' | 'deals' | 'companies' | 'sectors'>('news');
@@ -20,6 +21,7 @@ export default function HomePage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <WatchlistHighlights />
       {/* Top Section: Live Market Overview */}
       <MarketOverview />
 
@@ -35,7 +37,7 @@ export default function HomePage() {
           gap: '1rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="home-tabs" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -108,7 +110,7 @@ export default function HomePage() {
           {/* Right Column: NIFTY 50 At-A-Glance */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div
-              className="glass-panel"
+              className="glass-panel editorial-spotlight"
               style={{
                 padding: '1.25rem',
                 display: 'flex',
@@ -179,7 +181,7 @@ function SectorsTabOverview() {
 
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+      <div className="responsive-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="glass-panel skeleton" style={{ height: 140 }} />
         ))}
@@ -198,7 +200,7 @@ function SectorsTabOverview() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div className="responsive-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
         {sectors.map((sector) => (
           <Link
             key={sector.id}

@@ -179,8 +179,6 @@ input, select, textarea {
 
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -190,29 +188,121 @@ input, select, textarea {
   border-color: var(--border-medium);
 }
 
-/* Pulse animation for live updates */
-@keyframes pulse-dot {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+.header-mobile-nav { display: none; }
+
+.editorial-spotlight {
+  border-top: 2px solid var(--accent-primary);
+  box-shadow: none;
+}
+
+.watchlist-highlights {
+  padding: 1.2rem 0 1.35rem;
+  border-top: 2px solid var(--accent-primary);
+  border-bottom: 1px solid var(--border-medium);
+}
+
+.watchlist-highlights-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.section-eyebrow {
+  color: var(--accent-primary);
+  font: 600 0.7rem var(--font-mono);
+  letter-spacing: 0.14em;
+  margin-bottom: 0.35rem;
+}
+
+.watchlist-highlights h2 {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1.15;
+}
+
+.watchlist-highlights-detail, .watchlist-headline-meta {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.watchlist-highlights-detail { margin-top: 0.35rem; }
+
+.editorial-link {
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.watchlist-headlines {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.5rem;
+}
+
+.watchlist-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.watchlist-headline:hover .watchlist-headline-title { color: var(--accent-primary); }
+.watchlist-headline-title { font-size: 0.93rem; font-weight: 600; line-height: 1.35; }
+.watchlist-headline-meta strong { color: var(--accent-primary); }
+
+@media (max-width: 900px) {
+  .dashboard-grid, .responsive-columns { grid-template-columns: minmax(0, 1fr) !important; }
+  .header-desktop-nav, .header-divider { display: none !important; }
+  .header-main { gap: 0.7rem !important; }
+  .header-actions { gap: 0.5rem !important; }
+  .header-mobile-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-top: 1px solid var(--border-subtle);
+    scrollbar-width: none;
   }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
+  .header-mobile-nav a { padding: 0.55rem 0; color: var(--text-secondary); font-size: 0.83rem; }
+  .header-mobile-nav a[aria-current='page'] { color: var(--accent-primary); border-bottom: 2px solid var(--accent-primary); }
+}
+
+@media (max-width: 600px) {
+  .container { padding-left: 0.8rem; padding-right: 0.8rem; }
+  .header-main { height: 56px !important; }
+  .header-brand { font-size: 1.05rem !important; gap: 0.3rem !important; flex-shrink: 0; }
+  .header-brand .live-indicator { display: none; }
+  .header-search { width: 36px !important; min-width: 36px; max-width: 36px !important; height: 36px; padding: 0 !important; justify-content: center !important; }
+  .header-search-label, .header-shortcut, .header-user-name { display: none !important; }
+  .header-actions { margin-left: auto; }
+  .home-tabs { width: 100%; overflow-x: auto; padding-bottom: 0.3rem; }
+  .home-tabs button { flex-shrink: 0; }
+  .responsive-card-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .watchlist-headlines { grid-template-columns: minmax(0, 1fr); }
+  .watchlist-highlights-heading { align-items: start; flex-direction: column; }
+}
+
+@media (max-width: 390px) {
+  .header-brand > div:first-child { display: none !important; }
+  .header-signup { display: none; }
 }
 
 .live-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--bullish);
+  background-color: var(--accent-primary);
   display: inline-block;
-  animation: pulse-dot 2s infinite;
 }
 
 /* Skeleton Loading Animation */
@@ -249,4 +339,3 @@ input, select, textarea {
 .animate-spin {
   animation: spin 0.85s linear infinite;
 }
-

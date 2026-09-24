@@ -16,6 +16,12 @@ describe('News Provider Utilities', () => {
   it('handles invalid date strings safely without throwing', () => {
     assert.strictEqual(isCurrentDay('invalid-date-string'), false);
   });
+
+  it('uses the calendar day in India across UTC midnight', () => {
+    const now = new Date('2026-09-24T19:00:00Z'); // 00:30 on 25 Sep in India
+    assert.strictEqual(isCurrentDay('2026-09-24T18:45:00Z', now), true);
+    assert.strictEqual(isCurrentDay('2026-09-24T17:45:00Z', now), false);
+  });
 });
 
 it('does not rely on random IDs in the news provider', async () => {

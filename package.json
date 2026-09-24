@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
     "db:seed": "npx tsx src/db/seed.ts",
     "db:reset": "del data\\tracker.db 2>nul & npx tsx src/db/seed.ts",
     "equities:validate": "tsx scripts/validate-equities.ts",

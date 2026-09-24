@@ -81,7 +81,7 @@ export default function AuthModal() {
           background: 'var(--bg-card)',
           borderRadius: 'var(--radius-lg)',
           border: '1px solid var(--border-medium)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: 'var(--shadow-lg)',
           overflow: 'hidden',
           animation: 'fadeIn 0.2s ease-out',
         }}
@@ -139,7 +139,7 @@ export default function AuthModal() {
           style={{
             display: 'flex',
             borderBottom: '1px solid var(--border-subtle)',
-            background: 'var(--bg-subtle)',
+            background: 'var(--bg-secondary)',
           }}
         >
           <button

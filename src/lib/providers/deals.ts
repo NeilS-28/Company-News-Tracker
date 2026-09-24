@@ -1,4 +1,5 @@
 import Parser from 'rss-parser';
+import crypto from 'crypto';
 import { DealRadarItem, DealStatus } from '@/types';
 
 const parser = new Parser({
@@ -138,17 +139,22 @@ export async function fetchLiveDealsAndRumours(companyQuery?: string): Promise<D
       `https://news.google.com/rss/search?q=${encoded}&hl=en-IN&gl=IN&ceid=IN:en`
     );
 
-    const items: DealRadarItem[] = (feed.items || []).slice(0, 15).map((item, idx) => {
-      const title = item.title || 'Corporate Deal Update';
+    const items: DealRadarItem[] = (feed.items || []).slice(0, 15)
+      .filter(item => !isNaN(Date.parse(item.isoDate || item.pubDate || '')))
+      .map((item) => {
+      const rawTitle = item.title || 'Corporate Deal Update';
+      const lastDash = rawTitle.lastIndexOf(' - ');
+      const title = lastDash > 0 ? rawTitle.slice(0, lastDash) : rawTitle;
+      const source = lastDash > 0 ? rawTitle.slice(lastDash + 3) : item.creator || 'Publisher unknown';
       const summary = item.contentSnippet || item.content || title;
       const { status, dealType, confidence } = classifyDealStatus(title, summary);
-      const publishedAt = item.isoDate || item.pubDate || new Date().toISOString();
+      const publishedAt = item.isoDate || item.pubDate || '';
 
       return {
-        id: 400000 + idx + Math.floor(Math.random() * 10000),
+        id: 400000 + (crypto.createHash('sha256').update(`${item.link || ''}|${rawTitle}`).digest().readUInt32BE(0) % 1900000000),
         title,
         summary,
-        source: item.creator || item.source?.['$']?.['url'] || 'Deal Desk',
+        source,
         sourceUrl: item.link || '#',
         publishedAt,
         imageUrl: null,

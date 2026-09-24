@@ -244,6 +244,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
       {/* Grid of Companies */}
       {loading ? (
         <div
+          className="responsive-card-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -267,6 +268,7 @@ export default function CompanyGrid({ initialCompanies }: CompanyGridProps) {
         </div>
       ) : (
         <div
+          className="responsive-card-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',

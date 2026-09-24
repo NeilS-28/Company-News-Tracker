@@ -1,9 +1,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { formatCurrency, formatPercent, formatPoints } from '../src/lib/utils';
-import { getMarketQuote } from '../src/lib/providers/market';
+import { getMarketQuote, quoteStatus } from '../src/lib/providers/market';
 
 describe('Market Utilities & Quotes', () => {
+  it('shows closed and delayed quotes without claiming they are live', () => {
+    const now = Date.parse('2026-09-24T08:00:00Z');
+    assert.strictEqual(quoteStatus({ marketState: 'CLOSED', exchangeDataDelayedBy: 0 }, now, now), 'closed');
+    assert.strictEqual(quoteStatus({ marketState: 'REGULAR', exchangeDataDelayedBy: 15 }, now, now), 'delayed');
+    assert.strictEqual(quoteStatus({ marketState: 'REGULAR' }, now, now), 'delayed');
+    assert.strictEqual(quoteStatus({ marketState: 'REGULAR', exchangeDataDelayedBy: 0 }, now - 10 * 60_000, now), 'delayed');
+    assert.strictEqual(quoteStatus({ marketState: 'REGULAR', exchangeDataDelayedBy: 0 }, now - 60_000, now), 'live');
+  });
   it('formats currency in Indian Rupees format (INR / ₹)', () => {
     const formatted = formatCurrency(2500.5);
     assert.ok(formatted.includes('₹'));
@@ -20,13 +28,22 @@ describe('Market Utilities & Quotes', () => {
     assert.strictEqual(formatPoints(24500.75), '24,500.75');
   });
 
-  it('returns valid market quote with baseline fallback and proper status tag', async () => {
-    const quote = await getMarketQuote('RELIANCE');
-    assert.ok(quote);
-    assert.strictEqual(quote.symbol, 'RELIANCE');
-    assert.strictEqual(typeof quote.price, 'number');
-    assert.ok(quote.price > 0);
-    assert.ok(['live', 'delayed', 'baseline'].includes(quote.status));
+  it('uses the provider trade time instead of the fetch time', async () => {
+    const originalFetch = globalThis.fetch;
+    const tradeTime = Math.floor(Date.parse('2026-09-24T08:00:00Z') / 1000);
+    globalThis.fetch = async () => new Response(JSON.stringify({ chart: { result: [{ meta: {
+      regularMarketPrice: 2500, chartPreviousClose: 2490, regularMarketTime: tradeTime,
+      marketState: 'CLOSED', exchangeDataDelayedBy: 0,
+    } }] } }), { status: 200 });
+    try {
+      const quote = await getMarketQuote('RELIANCE');
+      assert.ok(quote);
+      assert.strictEqual(quote.timestamp, new Date(tradeTime * 1000).toISOString());
+      assert.strictEqual(quote.status, 'closed');
+      assert.strictEqual(quote.symbol, 'RELIANCE');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 

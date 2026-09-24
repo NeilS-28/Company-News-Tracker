@@ -218,7 +218,7 @@ export default function WatchlistsPage() {
                   style={{
                     fontSize: '0.72rem',
                     fontWeight: 600,
-                    background: 'var(--bg-subtle)',
+                    background: 'var(--bg-secondary)',
                     color: 'var(--text-muted)',
                     padding: '2px 8px',
                     borderRadius: 'var(--radius-full)',
@@ -482,7 +482,7 @@ export default function WatchlistsPage() {
       )}
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
+        <div className="responsive-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
           <div className="glass-panel skeleton" style={{ height: 400 }} />
           <div className="glass-panel skeleton" style={{ height: 400 }} />
         </div>
@@ -524,7 +524,7 @@ export default function WatchlistsPage() {
           </Link>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
+        <div className="responsive-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
           {/* Left Column: Watchlist Companies Table */}
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

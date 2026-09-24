@@ -47,8 +47,8 @@ export default function NewsFeed({
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [relativeTime, setRelativeTime] = useState<string>('Just now');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [relativeTime, setRelativeTime] = useState<string>('Not checked yet');
   const [showRefreshSuccess, setShowRefreshSuccess] = useState(false);
 
   // Lazy initialize interval preference from localStorage
@@ -173,6 +173,7 @@ export default function NewsFeed({
 
   // Handle interval timer ticking & relative time ticker
   useEffect(() => {
+    if (!lastUpdated) return;
     const timer = setInterval(() => {
       setRelativeTime(getRelativeTimeString(lastUpdated));
     }, 1000);
@@ -258,7 +259,7 @@ export default function NewsFeed({
               {total} {total === 1 ? 'story' : 'stories'}
             </span>
           </h2>
-          <span className="live-indicator" title="Live Indian Financial News Feed" />
+          <span className="live-indicator" title="News feed refreshes periodically" />
         </div>
 
         {/* Action Controls: Auto-refresh selector, Manual Refresh & Search */}
@@ -415,7 +416,7 @@ export default function NewsFeed({
             type="button"
             onClick={handleManualRefresh}
             disabled={loading}
-            title={`Last updated ${relativeTime} (${lastUpdated.toLocaleTimeString()}). Click to refresh news feed.`}
+            title={`Last checked ${relativeTime}${lastUpdated ? ` (${lastUpdated.toLocaleTimeString()})` : ''}. Click to refresh news feed.`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -468,12 +469,12 @@ export default function NewsFeed({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span>
-            Last updated: <strong style={{ color: 'var(--text-secondary)' }}>{relativeTime}</strong>
+            Last checked: <strong style={{ color: 'var(--text-secondary)' }}>{relativeTime}</strong>
           </span>
           <span>•</span>
-          <span title={lastUpdated.toISOString()}>
+          {lastUpdated && <span title={lastUpdated.toISOString()}>
             {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
+          </span>}
           {showRefreshSuccess && (
             <span
               style={{

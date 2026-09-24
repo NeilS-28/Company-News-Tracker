@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { TrendingUp, TrendingDown, Newspaper, ChevronRight } from 'lucide-react';
-import { formatCurrency, formatPercent } from '@/lib/utils';
+import { formatCurrency, formatPercent, formatMarketTime } from '@/lib/utils';
 import { CompanyWithQuote } from '@/types';
 import WatchlistButton from './WatchlistButton';
 
@@ -93,9 +93,9 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   background: quote.status === 'live' ? 'var(--bullish-bg)' : 'var(--border-subtle)',
                   color: quote.status === 'live' ? 'var(--bullish)' : 'var(--text-muted)',
                 }}
-                title={quote.source ? `Data source: ${quote.source}` : undefined}
+                title={`${quote.source || 'Market data'} · ${formatMarketTime(quote.timestamp)}`}
               >
-                {quote.status === 'live' ? '● LIVE' : 'BASE'}
+                {quote.status === 'live' ? '● LIVE' : quote.status === 'closed' ? 'CLOSED' : 'DELAYED'}
               </span>
             )}
           </div>
@@ -137,6 +137,9 @@ export default function CompanyCard({ company }: CompanyCardProps) {
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
               {formatCurrency(quote.price)}
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>
+              As of {formatMarketTime(quote.timestamp)}
             </div>
             <div
               style={{
