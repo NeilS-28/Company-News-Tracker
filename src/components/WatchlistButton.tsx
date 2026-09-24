@@ -92,16 +92,16 @@ export default function WatchlistButton({ companyId, size = 16, showLabel = fals
         gap: '0.35rem',
         padding: showLabel ? '0.35rem 0.65rem' : '0.35rem',
         borderRadius: 'var(--radius-sm)',
-        background: isInWatchlist ? 'rgba(234, 179, 8, 0.12)' : 'transparent',
-        border: `1px solid ${isInWatchlist ? 'rgba(234, 179, 8, 0.3)' : 'transparent'}`,
-        color: isInWatchlist ? '#eab308' : 'var(--text-muted)',
+        background: isInWatchlist ? 'var(--accent-soft)' : 'transparent',
+        border: `1px solid ${isInWatchlist ? 'var(--accent-border)' : 'transparent'}`,
+        color: isInWatchlist ? 'var(--accent-primary)' : 'var(--text-muted)',
         cursor: 'pointer',
         transition: 'all 0.15s ease',
       }}
       onMouseEnter={(e) => {
         if (!isInWatchlist) {
-          e.currentTarget.style.color = '#eab308';
-          e.currentTarget.style.background = 'rgba(234, 179, 8, 0.08)';
+          e.currentTarget.style.color = 'var(--accent-primary)';
+          e.currentTarget.style.background = 'var(--accent-soft)';
         }
       }}
       onMouseLeave={(e) => {
@@ -113,8 +113,8 @@ export default function WatchlistButton({ companyId, size = 16, showLabel = fals
     >
       <Star
         size={size}
-        fill={isInWatchlist ? '#eab308' : 'none'}
-        stroke={isInWatchlist ? '#eab308' : 'currentColor'}
+        fill={isInWatchlist ? 'var(--accent-primary)' : 'none'}
+        stroke={isInWatchlist ? 'var(--accent-primary)' : 'currentColor'}
       />
       {showLabel && (
         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>

@@ -95,7 +95,7 @@ export default function AuthModal() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'rgba(56, 189, 248, 0.04)',
+            background: 'var(--accent-soft)',
           }}
         >
           <div>
@@ -196,7 +196,7 @@ export default function AuthModal() {
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.25)',
-                color: '#ef4444',
+                color: 'var(--bearish)',
                 fontSize: '0.82rem',
               }}
             >
@@ -330,7 +330,7 @@ export default function AuthModal() {
                 width: '100%',
                 padding: '0.75rem',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--accent-primary)',
+                backgroundColor: 'var(--accent-fill)',
                 color: '#fff',
                 fontSize: '0.875rem',
                 fontWeight: 600,

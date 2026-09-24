@@ -89,6 +89,7 @@ export default function Header() {
               fontWeight: 800,
               fontSize: '1.25rem',
               letterSpacing: '-0.02em',
+              fontFamily: 'var(--font-display)',
             }}
           >
             <div
@@ -96,7 +97,7 @@ export default function Header() {
                 width: 32,
                 height: 32,
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                background: 'var(--accent-fill)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -168,7 +169,7 @@ export default function Header() {
                       fontSize: '0.875rem',
                       fontWeight: isActive ? 600 : 500,
                       color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                      background: isActive ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
+                      background: isActive ? 'var(--accent-soft)' : 'transparent',
                       transition: 'all 0.15s ease',
                     }}
                   >
@@ -212,7 +213,7 @@ export default function Header() {
                           width: 28,
                           height: 28,
                           borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                          background: 'var(--accent-fill)',
                           color: '#fff',
                           fontWeight: 700,
                           fontSize: '0.75rem',
@@ -288,7 +289,7 @@ export default function Header() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: 'var(--radius-md)',
                             fontSize: '0.85rem',
-                            color: '#ef4444',
+                            color: 'var(--bearish)',
                             background: 'transparent',
                             border: 'none',
                             cursor: 'pointer',
@@ -331,7 +332,7 @@ export default function Header() {
                         fontSize: '0.82rem',
                         fontWeight: 600,
                         color: '#fff',
-                        background: 'var(--accent-primary)',
+                        background: 'var(--accent-fill)',
                         border: 'none',
                         borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',

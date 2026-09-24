@@ -361,7 +361,7 @@ export default function NewsFeed({
                         justifyContent: 'space-between',
                         padding: '0.45rem 0.65rem',
                         borderRadius: 'var(--radius-sm)',
-                        background: isActive ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                        background: isActive ? 'var(--accent-soft)' : 'transparent',
                         color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)',
                         fontSize: '0.8rem',
                         fontWeight: isActive ? 600 : 400,
@@ -424,8 +424,8 @@ export default function NewsFeed({
               borderRadius: 'var(--radius-md)',
               background: isManualRefreshing
                 ? 'var(--accent-glow)'
-                : 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(2, 132, 199, 0.25))',
-              border: '1px solid rgba(56, 189, 248, 0.35)',
+                : 'var(--accent-soft)',
+              border: '1px solid var(--accent-border)',
               color: 'var(--accent-primary)',
               fontSize: '0.825rem',
               fontWeight: 600,
@@ -440,7 +440,7 @@ export default function NewsFeed({
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+              e.currentTarget.style.borderColor = 'var(--accent-border)';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
@@ -517,8 +517,8 @@ export default function NewsFeed({
                 borderRadius: 'var(--radius-full)',
                 fontSize: '0.8rem',
                 fontWeight: isActive ? 600 : 500,
-                background: isActive ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                color: isActive ? '#080c14' : 'var(--text-secondary)',
+                background: isActive ? 'var(--accent-fill)' : 'var(--bg-glass)',
+                color: isActive ? 'var(--accent-contrast)' : 'var(--text-secondary)',
                 border: `1px solid ${isActive ? 'transparent' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',

@@ -106,7 +106,7 @@ export default function SectorDetailPage({
               fontWeight: 600,
               padding: '2px 8px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(56, 189, 248, 0.12)',
+              background: 'var(--accent-soft)',
               color: 'var(--accent-primary)',
             }}
           >

@@ -27,8 +27,8 @@ export default function SectorsPage() {
             width: 40,
             height: 40,
             borderRadius: 'var(--radius-md)',
-            background: 'rgba(56, 189, 248, 0.1)',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -89,7 +89,7 @@ export default function SectorsPage() {
                       fontWeight: 600,
                       padding: '2px 8px',
                       borderRadius: 'var(--radius-full)',
-                      background: 'rgba(56, 189, 248, 0.12)',
+                      background: 'var(--accent-soft)',
                       color: 'var(--accent-primary)',
                     }}
                   >

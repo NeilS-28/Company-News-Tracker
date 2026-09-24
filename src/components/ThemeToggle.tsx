@@ -49,7 +49,7 @@ export default function ThemeToggle() {
         transition: 'all 0.15s ease',
       }}
     >
-      {theme === 'dark' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#6366f1" />}
+      {theme === 'dark' ? <Sun size={18} color="var(--accent-primary)" /> : <Moon size={18} color="var(--accent-primary)" />}
     </button>
   );
 }

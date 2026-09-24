@@ -58,7 +58,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   fontWeight: 600,
                   padding: '1px 5px',
                   borderRadius: '3px',
-                  background: 'rgba(56, 189, 248, 0.12)',
+                  background: 'var(--accent-soft)',
                   color: 'var(--accent-primary)',
                   fontFamily: 'var(--font-mono)',
                 }}
@@ -90,8 +90,8 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   fontWeight: 600,
                   padding: '1px 4px',
                   borderRadius: '3px',
-                  background: quote.status === 'live' ? 'rgba(34, 197, 94, 0.12)' : 'var(--border-subtle)',
-                  color: quote.status === 'live' ? '#22c55e' : 'var(--text-muted)',
+                  background: quote.status === 'live' ? 'var(--bullish-bg)' : 'var(--border-subtle)',
+                  color: quote.status === 'live' ? 'var(--bullish)' : 'var(--text-muted)',
                 }}
                 title={quote.source ? `Data source: ${quote.source}` : undefined}
               >

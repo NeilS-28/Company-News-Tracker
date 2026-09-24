@@ -68,8 +68,8 @@ export default function MarketOverview() {
             style={{
               padding: '2px 8px',
               borderRadius: 'var(--radius-full)',
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-border)',
               color: 'var(--accent-primary)',
               fontSize: '0.7rem',
               fontWeight: 700,
@@ -98,9 +98,9 @@ export default function MarketOverview() {
       >
         {headlines.map((article, index) => {
           const rankColors = [
-            { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', text: '#f59e0b' },
-            { bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)', text: '#38bdf8' },
-            { bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.3)', text: '#c084fc' },
+            { bg: 'var(--accent-soft)', border: 'var(--accent-border)', text: 'var(--accent-primary)' },
+            { bg: 'var(--accent-soft)', border: 'var(--accent-border)', text: 'var(--accent-primary)' },
+            { bg: 'var(--accent-soft)', border: 'var(--accent-border)', text: 'var(--accent-primary)' },
           ];
           const rankStyle = rankColors[index] || rankColors[0];
 
@@ -213,7 +213,7 @@ export default function MarketOverview() {
                           fontFamily: 'var(--font-mono)',
                           padding: '1px 5px',
                           borderRadius: '3px',
-                          background: 'rgba(56, 189, 248, 0.08)',
+                          background: 'var(--accent-soft)',
                           color: 'var(--accent-primary)',
                           textDecoration: 'none',
                           display: 'inline-flex',

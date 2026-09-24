@@ -132,9 +132,9 @@ export default function CompanyPage({
                 fontWeight: 700,
                 padding: '3px 8px',
                 borderRadius: 'var(--radius-sm)',
-                background: 'rgba(56, 189, 248, 0.12)',
+                background: 'var(--accent-soft)',
                 color: 'var(--accent-primary)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
+                border: '1px solid var(--accent-border)',
               }}
             >
               {company.ticker}.NS
@@ -199,8 +199,8 @@ export default function CompanyPage({
                   fontWeight: 600,
                   padding: '4px 10px',
                   borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(56, 189, 248, 0.1)',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  background: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-border)',
                   color: 'var(--accent-primary)',
                   textDecoration: 'none',
                 }}
@@ -280,8 +280,8 @@ export default function CompanyPage({
                     fontWeight: 700,
                     padding: '1px 6px',
                     borderRadius: '4px',
-                    background: (quote as { status?: string }).status === 'live' ? 'rgba(34, 197, 94, 0.15)' : 'var(--border-subtle)',
-                    color: (quote as { status?: string }).status === 'live' ? '#22c55e' : 'var(--text-muted)',
+                    background: (quote as { status?: string }).status === 'live' ? 'var(--bullish-bg)' : 'var(--border-subtle)',
+                    color: (quote as { status?: string }).status === 'live' ? 'var(--bullish)' : 'var(--text-muted)',
                   }}
                 >
                   ● LIVE
@@ -353,8 +353,8 @@ export default function CompanyPage({
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.85rem',
                 fontWeight: activeSubTab === 'news' ? 700 : 500,
-                background: activeSubTab === 'news' ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                color: activeSubTab === 'news' ? '#080c14' : 'var(--text-secondary)',
+                background: activeSubTab === 'news' ? 'var(--accent-fill)' : 'var(--bg-glass)',
+                color: activeSubTab === 'news' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
                 border: `1px solid ${activeSubTab === 'news' ? 'transparent' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
               }}
@@ -368,8 +368,8 @@ export default function CompanyPage({
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.85rem',
                 fontWeight: activeSubTab === 'deals' ? 700 : 500,
-                background: activeSubTab === 'deals' ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                color: activeSubTab === 'deals' ? '#080c14' : 'var(--text-secondary)',
+                background: activeSubTab === 'deals' ? 'var(--accent-fill)' : 'var(--bg-glass)',
+                color: activeSubTab === 'deals' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
                 border: `1px solid ${activeSubTab === 'deals' ? 'transparent' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
               }}

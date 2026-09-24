@@ -49,25 +49,25 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
       case 'unverified-rumour':
         return {
           label: 'Unverified Rumour',
-          bg: 'rgba(234, 179, 8, 0.12)',
-          border: 'rgba(234, 179, 8, 0.3)',
-          text: '#eab308',
+          bg: 'var(--accent-soft)',
+          border: 'var(--accent-border)',
+          text: 'var(--accent-primary)',
           icon: HelpCircle,
         };
       case 'in-talks':
         return {
           label: 'In Active Talks',
-          bg: 'rgba(56, 189, 248, 0.12)',
-          border: 'rgba(56, 189, 248, 0.3)',
-          text: '#38bdf8',
+          bg: 'var(--accent-soft)',
+          border: 'var(--accent-border)',
+          text: 'var(--accent-primary)',
           icon: AlertCircle,
         };
       case 'sebi-clarification':
         return {
           label: 'SEBI Clarification Filed',
-          bg: 'rgba(168, 85, 247, 0.12)',
-          border: 'rgba(168, 85, 247, 0.3)',
-          text: '#c084fc',
+          bg: 'var(--accent-soft)',
+          border: 'var(--accent-border)',
+          text: 'var(--accent-primary)',
           icon: FileText,
         };
       case 'confirmed':
@@ -75,7 +75,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
           label: 'Confirmed / Signed',
           bg: 'rgba(16, 185, 129, 0.12)',
           border: 'rgba(16, 185, 129, 0.3)',
-          text: '#10b981',
+          text: 'var(--bullish)',
           icon: CheckCircle2,
         };
       case 'denied':
@@ -83,7 +83,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
           label: 'Denied by Company',
           bg: 'rgba(239, 68, 68, 0.12)',
           border: 'rgba(239, 68, 68, 0.3)',
-          text: '#ef4444',
+          text: 'var(--bearish)',
           icon: XCircle,
         };
     }
@@ -119,7 +119,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
               width: 38,
               height: 38,
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(56, 189, 248, 0.15)',
+              background: 'var(--accent-soft)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -151,8 +151,8 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
               gap: '0.4rem',
               padding: '0.45rem 0.85rem',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(56, 189, 248, 0.08)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-border)',
               color: 'var(--accent-primary)',
               fontSize: '0.8rem',
               fontWeight: 600,
@@ -189,8 +189,8 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
                   borderRadius: 'var(--radius-full)',
                   fontSize: '0.8rem',
                   fontWeight: isActive ? 700 : 500,
-                  background: isActive ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                  color: isActive ? '#080c14' : 'var(--text-secondary)',
+                  background: isActive ? 'var(--accent-fill)' : 'var(--bg-glass)',
+                  color: isActive ? 'var(--accent-contrast)' : 'var(--text-secondary)',
                   border: `1px solid ${isActive ? 'transparent' : 'var(--border-subtle)'}`,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -350,7 +350,7 @@ export default function DealRadar({ companyId, companyName, irUrl }: DealRadarPr
                           fontFamily: 'var(--font-mono)',
                           padding: '1px 6px',
                           borderRadius: '4px',
-                          background: 'rgba(56, 189, 248, 0.08)',
+                          background: 'var(--accent-soft)',
                           color: 'var(--accent-primary)',
                           textDecoration: 'none',
                         }}

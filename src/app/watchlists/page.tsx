@@ -184,12 +184,12 @@ export default function WatchlistsPage() {
               width: 40,
               height: 40,
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(234, 179, 8, 0.12)',
-              border: '1px solid rgba(234, 179, 8, 0.25)',
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#eab308',
+              color: 'var(--accent-primary)',
             }}
           >
             <Star size={22} fill="currentColor" />
@@ -204,11 +204,11 @@ export default function WatchlistsPage() {
                   style={{
                     fontSize: '0.75rem',
                     fontWeight: 600,
-                    background: 'rgba(56, 189, 248, 0.15)',
+                    background: 'var(--accent-soft)',
                     color: 'var(--accent-primary)',
                     padding: '2px 8px',
                     borderRadius: 'var(--radius-full)',
-                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    border: '1px solid var(--accent-border)',
                   }}
                 >
                   Personalized for {user.name.split(' ')[0]}
@@ -246,8 +246,8 @@ export default function WatchlistsPage() {
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.85rem',
                 fontWeight: activeWatchlistId === wl.id ? 700 : 500,
-                background: activeWatchlistId === wl.id ? 'var(--accent-primary)' : 'var(--bg-glass)',
-                color: activeWatchlistId === wl.id ? '#080c14' : 'var(--text-secondary)',
+                background: activeWatchlistId === wl.id ? 'var(--accent-fill)' : 'var(--bg-glass)',
+                color: activeWatchlistId === wl.id ? 'var(--accent-contrast)' : 'var(--text-secondary)',
                 border: `1px solid ${activeWatchlistId === wl.id ? 'transparent' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
               }}
@@ -306,7 +306,7 @@ export default function WatchlistsPage() {
                 borderRadius: 'var(--radius-md)',
                 background: 'rgba(239, 68, 68, 0.08)',
                 border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: '#ef4444',
+                color: 'var(--bearish)',
                 cursor: 'pointer',
               }}
             >
@@ -365,8 +365,8 @@ export default function WatchlistsPage() {
           style={{
             padding: '1rem 1.25rem',
             borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 100%)',
-            border: '1px solid rgba(56, 189, 248, 0.22)',
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -380,7 +380,7 @@ export default function WatchlistsPage() {
                 width: 34,
                 height: 34,
                 borderRadius: '8px',
-                background: 'rgba(56, 189, 248, 0.15)',
+                background: 'var(--accent-soft)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -423,7 +423,7 @@ export default function WatchlistsPage() {
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 borderRadius: 'var(--radius-md)',
-                background: 'var(--accent-primary)',
+                background: 'var(--accent-fill)',
                 border: 'none',
                 color: '#fff',
                 cursor: 'pointer',
@@ -469,8 +469,8 @@ export default function WatchlistsPage() {
             style={{
               padding: '0.45rem 1rem',
               borderRadius: 'var(--radius-sm)',
-              background: 'var(--accent-primary)',
-              color: '#080c14',
+              background: 'var(--accent-fill)',
+              color: 'var(--accent-contrast)',
               fontWeight: 600,
               fontSize: '0.85rem',
               cursor: 'pointer',
@@ -513,8 +513,8 @@ export default function WatchlistsPage() {
             style={{
               padding: '0.5rem 1.25rem',
               borderRadius: 'var(--radius-md)',
-              background: 'var(--accent-primary)',
-              color: '#080c14',
+              background: 'var(--accent-fill)',
+              color: 'var(--accent-contrast)',
               fontWeight: 600,
               fontSize: '0.85rem',
               textDecoration: 'none',
